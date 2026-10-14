@@ -1,3 +1,5 @@
+import { PANEL_PRESETS, type PanelKind } from "./solar-layers";
+
 export type LoadKind = "led" | "motor" | "resistor" | "battery" | "open";
 
 export interface SolarReading {
@@ -20,11 +22,16 @@ export function calculateSolarReading(
   irradiance: number,
   temperature: number,
   load: LoadKind,
+  panel: PanelKind = "commercial",
 ): SolarReading {
+  const preset = PANEL_PRESETS[panel];
   const sun = irradiance / 1000;
   if (irradiance <= 0) return { voltage: 0, current: 0, power: 0, efficiency: 0, recombination: 0, status: "No light; no photogenerated carriers" };
-  const voc = Math.max(0.35, 1.82 - 0.0036 * (temperature - 25) + 0.055 * Math.log(Math.max(sun, 0.05)));
-  const isc = 0.145 * sun * (1 + 0.0005 * (temperature - 25));
+  const temperatureFactor = Math.max(0.5, 1 + preset.temperatureCoefficient * (temperature - 25));
+  const voc = Math.max(0.15, preset.voc * temperatureFactor + 0.055 * Math.log(Math.max(sun, 0.05)));
+  // I(V) = Isc*(1-(V/Voc)^7.5); its exact normalized maximum-power factor.
+  const maximumPowerFactor = Math.pow(1 / 8.5, 1 / 7.5) * (7.5 / 8.5);
+  const isc = (preset.efficiency * 1000 * 0.0008) / (preset.voc * maximumPowerFactor) * sun;
 
   if (load === "open") {
     return {

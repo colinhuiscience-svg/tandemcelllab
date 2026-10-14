@@ -12,3 +12,5 @@
 - Keep the solar simulator client-only on the index route so WebGL never runs during server rendering.
 - Keep electrical calculations in a pure model module and use shared readings for the UI and scene so load and environment changes remain consistent.
 - Load uploaded geometry through its asset pointer and label educational layers as schematic; STL geometry alone does not establish physical materials or electrical specifications.
+- Keep layer definitions and panel benchmark assumptions in one shared catalog; the scene and explorer derive from it to preserve order and single-junction versus tandem differences.
+- Preset efficiency is an assumed reference maximum-power benchmark; report the actual load-dependent conversion efficiency separately and never imply that a generic stack reproduces a manufacturer's proprietary design.
