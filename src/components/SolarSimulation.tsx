@@ -1,7 +1,7 @@
-import { Canvas, useFrame, useLoader } from "@react-three/fiber";
+import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, OrbitControls } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
-import { BatteryCharging, CircleGauge, Fan, Lightbulb, Pause, Play, RotateCcw, Sun, Zap } from "lucide-react";
+import { BatteryCharging, CircleGauge, Fan, Lightbulb, Pause, Play, RotateCcw, Sun, Zap, Box, Layers } from "lucide-react";
 import { createContext, Suspense, useContext, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
@@ -9,8 +9,11 @@ import panelAsset from "@/assets/panel.stl.asset.json";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { calculateSolarReading, type LoadKind } from "@/lib/solar-model";
+import { PANEL_PRESETS, layerHeight, type PanelKind, type SolarLayer, type LayerMaterial } from "@/lib/solar-layers";
+import { LayerExplorer } from "./LayerExplorer";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
-type Palette = Record<"silicon" | "perovskite" | "electron" | "hole" | "contact" | "wire" | "photon" | "canvas", string>;
+type Palette = Record<LayerMaterial | "electron" | "hole" | "wire" | "photon" | "canvas", string>;
 const ScenePalette = createContext<Palette | null>(null);
 function usePalette() {
   const palette = useContext(ScenePalette);
@@ -30,7 +33,7 @@ function readPalette(): Palette {
     const pixel = ctx.getImageData(0, 0, 1, 1).data;
     return `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`;
   };
-  return { silicon: color("silicon"), perovskite: color("perovskite"), electron: color("electron"), hole: color("hole"), contact: color("contact"), wire: color("wire"), photon: color("photon"), canvas: color("canvas") };
+  return { silicon: color("silicon"), perovskite: color("perovskite"), electron: color("electron"), hole: color("hole"), contact: color("contact"), wire: color("wire"), photon: color("photon"), canvas: color("canvas"), glass: color("glass"), encapsulant: color("encapsulant"), optical: color("optical"), transport: color("transport"), molecular: color("molecular"), backsheet: color("backsheet") };
 }
 
 const LOADS: Array<{ id: LoadKind; label: string; icon: typeof Lightbulb }> = [
@@ -62,8 +65,10 @@ function UploadedPanel({ exploded }: { exploded: boolean }) {
   );
 }
 
-function Layer({ y, color, width, depth, opacity = 1 }: { y: number; color: string; width: number; depth: number; opacity?: number }) {
+function Layer({ layer, y, focused, dimmed, onSelect }: { layer: SolarLayer; y: number; focused: boolean; dimmed: boolean; onSelect: () => void }) {
   const palette = usePalette();
+  const color = palette[layer.material];
+  const opacity = dimmed ? 0.13 : focused ? 1 : ["glass", "encapsulant"].includes(layer.material) ? 0.55 : 0.95;
   const texture = useMemo(() => {
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = 128;
@@ -82,14 +87,14 @@ function Layer({ y, color, width, depth, opacity = 1 }: { y: number; color: stri
   }, [color, palette.contact]);
   useEffect(() => () => texture.dispose(), [texture]);
   return (
-    <mesh position={[-2.9, y, 0]} castShadow receiveShadow>
-      <boxGeometry args={[width, 0.18, depth]} />
-      <meshPhysicalMaterial map={texture} transparent={opacity < 1} opacity={opacity} roughness={0.32} metalness={0.08} transmission={opacity < 1 ? 0.12 : 0} />
+    <mesh position={[-2.9, y, focused ? 1.1 : 0]} castShadow receiveShadow userData={{ layerId: layer.id }} onClick={(event) => { event.stopPropagation(); onSelect(); }}>
+      <boxGeometry args={[layer.material === "glass" || layer.material === "backsheet" ? 4.4 : 4.25, 0.07, 2.55]} />
+      <meshPhysicalMaterial map={texture} transparent={opacity < 1} opacity={opacity} depthWrite={!dimmed} roughness={0.32} metalness={0.08} emissive={color} emissiveIntensity={focused ? 0.2 : 0} />
     </mesh>
   );
 }
 
-function Photons({ active }: { active: boolean }) {
+function Photons({ active, top }: { active: boolean; top: number }) {
   const PALETTE = usePalette();
   const group = useRef<THREE.Group>(null);
   const time = useRef(0);
@@ -97,7 +102,7 @@ function Photons({ active }: { active: boolean }) {
     if (!group.current || !active) return;
     time.current += Math.min(delta, 0.05);
     group.current.children.forEach((child, index) => {
-      child.position.y = 4.6 - ((time.current * 1.25 + index * 0.55) % 3.3);
+      child.position.y = top + 2.1 - ((time.current * 1.25 + index * 0.55) % 2.1);
     });
   });
   return (
@@ -150,7 +155,7 @@ function CarrierFlow({ current, active }: { current: number; active: boolean }) 
   );
 }
 
-function Recombination({ rate, active }: { rate: number; active: boolean }) {
+function Recombination({ rate, active, y }: { rate: number; active: boolean; y: number }) {
   const PALETTE = usePalette();
   const group = useRef<THREE.Group>(null);
   const time = useRef(0);
@@ -168,8 +173,8 @@ function Recombination({ rate, active }: { rate: number; active: boolean }) {
       const z = -0.65 + Math.floor(pair / 4) * 1.25;
       const separation = (1 - phase) * 0.34;
       const scale = phase > 0.82 ? (1 - phase) / 0.18 : 1;
-      electron.position.set(x - separation, 0.48, z);
-      hole.position.set(x + separation, 0.48, z);
+      electron.position.set(x - separation, y + 0.09, z);
+      hole.position.set(x + separation, y + 0.09, z);
       electron.scale.setScalar(scale);
       hole.scale.setScalar(scale);
     }
@@ -202,29 +207,39 @@ function LoadObject({ load, active }: { load: LoadKind; active: boolean }) {
   );
 }
 
-function Scene({ exploded, irradiance, reading, load, running }: { exploded: boolean; irradiance: number; reading: ReturnType<typeof calculateSolarReading>; load: LoadKind; running: boolean }) {
+function FocusCamera({ selected, layers, exploded }: { selected: string | null; layers: SolarLayer[]; exploded: boolean }) {
+  const controls = useRef<OrbitControlsImpl>(null);
+  const { camera, size } = useThree();
+  useEffect(() => {
+    const index = layers.findIndex((layer) => layer.id === selected);
+    const y = index < 0 ? 0 : layerHeight(index, layers.length, exploded);
+    const target = index < 0 ? new THREE.Vector3(-0.3, 0, 0) : new THREE.Vector3(-2.9, y, 1.1);
+    const offset = index < 0 ? new THREE.Vector3(10, 7.5, 13).multiplyScalar(size.width < 500 ? 1.22 : 1) : new THREE.Vector3(4.4, 3.5, 6.2).multiplyScalar(size.width < 500 ? 1.15 : 1);
+    camera.position.copy(target).add(offset);
+    camera.lookAt(target);
+    if (controls.current) { controls.current.target.copy(target); controls.current.update(); }
+  }, [selected, layers, exploded, camera, size.width]);
+  return <OrbitControls ref={controls} makeDefault enablePan={false} minDistance={5} maxDistance={26} minPolarAngle={0.45} maxPolarAngle={1.5} />;
+}
+
+function Scene({ exploded, irradiance, reading, load, running, layers, selected, onSelect, original }: { exploded: boolean; irradiance: number; reading: ReturnType<typeof calculateSolarReading>; load: LoadKind; running: boolean; layers: SolarLayer[]; selected: string | null; onSelect: (id: string | null) => void; original: boolean }) {
   const PALETTE = usePalette();
-  const gap = exploded ? 0.62 : 0.21;
   const flowing = running && reading.current > 0.002;
+  const absorberIndex = layers.findIndex((layer) => layer.id === "perovskite" || layer.id === "silicon");
+  const activeY = layerHeight(absorberIndex, layers.length, exploded);
   return (
     <>
       <color attach="background" args={[PALETTE.canvas]} />
       <ambientLight intensity={0.7} />
       <directionalLight position={[-6, 10, 8]} intensity={2.2} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
       <Environment><Lightformer intensity={1.7} position={[0, 7, 2]} scale={[12, 6, 1]} /><Lightformer intensity={0.8} position={[7, 1, 3]} rotation-y={Math.PI / 2} scale={[8, 3, 1]} /></Environment>
-      <Suspense fallback={<mesh position={[-2.9, 0, 0]}><boxGeometry args={[4.4, 0.1, 2.55]} /><meshStandardMaterial color={PALETTE.contact} wireframe /></mesh>}><UploadedPanel exploded={exploded} /></Suspense>
-      <group position-y={-0.8}>
-        <Layer y={gap * 3} color={PALETTE.contact} width={4.4} depth={2.55} opacity={0.35} />
-        <Layer y={gap * 2} color={PALETTE.perovskite} width={4.25} depth={2.45} opacity={0.9} />
-        <Layer y={gap} color={PALETTE.contact} width={4.25} depth={2.45} opacity={0.45} />
-        <Layer y={0} color={PALETTE.silicon} width={4.25} depth={2.45} />
-        <Layer y={-gap} color={PALETTE.contact} width={4.4} depth={2.55} />
-      </group>
-      <Photons active={running && irradiance > 80} />
+      {original && <Suspense fallback={<mesh position={[-2.9, 0, 0]}><boxGeometry args={[4.4, 0.1, 2.55]} /><meshStandardMaterial color={PALETTE.contact} wireframe /></mesh>}><UploadedPanel exploded={exploded} /></Suspense>}
+      {layers.map((layer, index) => <Layer key={layer.id} layer={layer} y={layerHeight(index, layers.length, exploded)} focused={selected === layer.id} dimmed={selected !== null && selected !== layer.id} onSelect={() => onSelect(selected === layer.id ? null : layer.id)} />)}
+      <Photons active={running && irradiance > 80} top={layerHeight(0, layers.length, exploded)} />
       <CarrierFlow current={reading.current} active={flowing} />
-      <Recombination rate={reading.recombination} active={running && irradiance > 80} />
+      <Recombination rate={reading.recombination} active={running && irradiance > 80} y={activeY} />
       <LoadObject load={load} active={flowing} />
-      <OrbitControls makeDefault enablePan={false} minDistance={8} maxDistance={18} minPolarAngle={0.45} maxPolarAngle={1.45} target={[0, 0, 0]} />
+      <FocusCamera selected={selected} layers={layers} exploded={exploded} />
     </>
   );
 }
@@ -235,19 +250,29 @@ export function SolarSimulation() {
   const [load, setLoad] = useState<LoadKind>("led");
   const [exploded, setExploded] = useState(true);
   const [running, setRunning] = useState(true);
+  const [panel, setPanel] = useState<PanelKind>("commercial");
+  const [selected, setSelected] = useState<string | null>(null);
+  const [original, setOriginal] = useState(false);
+  const preset = PANEL_PRESETS[panel];
   const [palette] = useState(readPalette);
   useEffect(() => { if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) setRunning(false); }, []);
-  const reading = useMemo(() => calculateSolarReading(irradiance, temperature, load), [irradiance, temperature, load]);
+  const reading = useMemo(() => calculateSolarReading(irradiance, temperature, load, panel), [irradiance, temperature, load, panel]);
+  const focusLayer = preset.layers.find((layer) => layer.id === selected);
 
   return (
     <main className="sim-shell">
       <header className="sim-header">
-        <div><p className="eyebrow">TANDEM CELL LAB</p><h1>Silicon × Perovskite</h1></div>
+        <div><p className="eyebrow">SOLAR CELL LAB</p><h1>{panel === "silicon" ? "Crystalline silicon" : "Silicon × Perovskite"}</h1></div>
         <div className="header-actions">
           <Button variant="outline" size="sm" onClick={() => setExploded((value) => !value)}><RotateCcw />{exploded ? "Assemble" : "Explode layers"}</Button>
           <Button size="icon" aria-label={running ? "Pause simulation" : "Play simulation"} title={running ? "Pause simulation" : "Play simulation"} onClick={() => setRunning((value) => !value)}>{running ? <Pause /> : <Play />}</Button>
         </div>
       </header>
+
+      <section className="preset-band" aria-label="Solar panel options">
+        <div className="preset-options">{(["commercial", "longi", "silicon"] as const).map((kind) => <Button key={kind} variant={panel === kind ? "default" : "outline"} aria-pressed={panel === kind} className="preset-option" onClick={() => { setPanel(kind); setSelected(null); }}><span>{PANEL_PRESETS[kind].shortName}</span><small>{(PANEL_PRESETS[kind].efficiency * 100).toFixed(1)}% reference</small></Button>)}</div>
+        <p className="preset-note">{preset.note}</p>
+      </section>
 
       <section className="sim-layout">
         <aside className="controls-panel">
@@ -269,22 +294,24 @@ export function SolarSimulation() {
             </div>
           </div>
           <div className="status-readout"><span className={running ? "live-dot" : "live-dot paused"} />{running ? reading.status : "Simulation paused"}</div>
-          <div className="layer-key"><p className="section-label">SCHEMATIC LAYERS · TOP TO BOTTOM</p><p>Transparent front contact</p><p><i className="dot perovskite" />Perovskite · 1.68 eV</p><p>Recombination junction</p><p><i className="dot silicon" />Silicon · 1.12 eV</p><p>Rear metal contact</p></div>
+          <div className="model-reference"><Button variant="ghost" size="sm" aria-pressed={original} onClick={() => setOriginal((value) => !value)}><Box />{original ? "Hide uploaded model" : "Uploaded model overlay"}</Button><p>17-layer mapping follows your supplied stack; the STL has no material labels.</p></div>
         </aside>
 
         <div className="viewport-wrap">
           <Canvas shadows dpr={[1, 1.5]} camera={{ position: [8.8, 7.2, 10.5], fov: 43 }} gl={{ antialias: true }}>
-            <ScenePalette.Provider value={palette}><Scene exploded={exploded} irradiance={irradiance} reading={reading} load={load} running={running} /></ScenePalette.Provider>
+            <ScenePalette.Provider value={palette}><Scene exploded={exploded} irradiance={irradiance} reading={reading} load={load} running={running} layers={preset.layers} selected={selected} onSelect={setSelected} original={original} /></ScenePalette.Provider>
           </Canvas>
           <div className="legend" aria-label="Particle legend"><span><i className="dot electron" />Electron</span><span><i className="dot hole" />Hole</span><span><i className="dot photon" />Photon</span></div>
+          <div className="scene-caption"><Layers /><span>{focusLayer ? `${focusLayer.number}. ${focusLayer.name}` : `${preset.layers.length}-layer ${panel === "silicon" ? "single-junction" : "tandem"} stack`}</span>{focusLayer && <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>Full stack</Button>}</div>
         </div>
+        <LayerExplorer layers={preset.layers} selected={selected} onSelect={setSelected} />
       </section>
 
       <section className="measurement-strip">
         <div className="metric"><span>VOLTAGE</span><strong>{reading.voltage.toFixed(2)} <small>V</small></strong></div>
         <div className="metric"><span>CURRENT</span><strong>{(reading.current * 1000).toFixed(0)} <small>mA</small></strong></div>
         <div className="metric"><span>POWER</span><strong>{(reading.power * 1000).toFixed(0)} <small>mW</small></strong></div>
-        <div className="metric"><span>EFFICIENCY</span><strong>{(reading.efficiency * 100).toFixed(1)} <small>%</small></strong></div>
+        <div className="metric"><span>LOAD EFFICIENCY</span><strong>{(reading.efficiency * 100).toFixed(1)} <small>%</small></strong></div>
         <div className="metric recombination"><span>RECOMBINATION</span><strong>{reading.recombination.toFixed(0)} <small>% relative</small></strong><div className="meter"><i style={{ width: `${reading.recombination}%` }} /></div></div>
       </section>
       <footer className="sim-footer"><span>Educational model · schematic layers, not to scale · assumed active area: 8 cm²</span><span>Not calibrated to uploaded STL · recombination is illustrative</span></footer>
