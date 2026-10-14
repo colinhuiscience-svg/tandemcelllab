@@ -1,24 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { SolarSimulation } from "@/components/SolarSimulation";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  ssr: false,
+  head: () => ({
+    meta: [
+      { title: "Tandem Cell Lab — Silicon × Perovskite" },
+      { name: "description", content: "Explore a layered silicon–perovskite solar cell, follow electrons and holes, and connect a selectable external circuit." },
+      { property: "og:title", content: "Tandem Cell Lab — Interactive Solar Simulation" },
+      { property: "og:description", content: "Experiment with light, temperature, carrier recombination and external loads in an interactive 3D solar lab." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: SolarSimulation,
 });
-
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}

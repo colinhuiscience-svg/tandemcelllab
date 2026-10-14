@@ -8,3 +8,7 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep the solar simulator client-only on the index route so WebGL never runs during server rendering.
+- Keep electrical calculations in a pure model module and use shared readings for the UI and scene so load and environment changes remain consistent.
+- Load uploaded geometry through its asset pointer and label educational layers as schematic; STL geometry alone does not establish physical materials or electrical specifications.
