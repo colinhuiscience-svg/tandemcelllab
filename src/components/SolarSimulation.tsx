@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { Environment, Html, Lightformer, OrbitControls } from "@react-three/drei";
+import { Environment, Lightformer, OrbitControls } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { BatteryCharging, CircleGauge, Fan, Lightbulb, Pause, Play, RotateCcw, Sun, Zap } from "lucide-react";
 import { createContext, Suspense, useContext, useEffect, useMemo, useRef, useState } from "react";
@@ -212,7 +212,7 @@ function Scene({ exploded, irradiance, reading, load, running }: { exploded: boo
       <ambientLight intensity={0.7} />
       <directionalLight position={[-6, 10, 8]} intensity={2.2} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
       <Environment><Lightformer intensity={1.7} position={[0, 7, 2]} scale={[12, 6, 1]} /><Lightformer intensity={0.8} position={[7, 1, 3]} rotation-y={Math.PI / 2} scale={[8, 3, 1]} /></Environment>
-      <Suspense fallback={<Html center><span className="model-loading">Loading panel…</span></Html>}><UploadedPanel exploded={exploded} /></Suspense>
+      <Suspense fallback={<mesh position={[-2.9, 0, 0]}><boxGeometry args={[4.4, 0.1, 2.55]} /><meshStandardMaterial color={PALETTE.contact} wireframe /></mesh>}><UploadedPanel exploded={exploded} /></Suspense>
       <group position-y={-0.8}>
         <Layer y={gap * 3} color={PALETTE.contact} width={4.4} depth={2.55} opacity={0.35} />
         <Layer y={gap * 2} color={PALETTE.perovskite} width={4.25} depth={2.45} opacity={0.9} />
