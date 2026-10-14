@@ -22,17 +22,16 @@ export function calculateSolarReading(
   load: LoadKind,
 ): SolarReading {
   const sun = irradiance / 1000;
+  if (irradiance <= 0) return { voltage: 0, current: 0, power: 0, efficiency: 0, recombination: 0, status: "No light; no photogenerated carriers" };
   const voc = Math.max(0.35, 1.82 - 0.0036 * (temperature - 25) + 0.055 * Math.log(Math.max(sun, 0.05)));
   const isc = 0.145 * sun * (1 + 0.0005 * (temperature - 25));
-  const tempLoss = Math.max(0, (temperature - 25) * 0.0018);
-  const baseEfficiency = Math.max(0.08, 0.287 - tempLoss);
 
   if (load === "open") {
     return {
       voltage: voc,
       current: 0,
       power: 0,
-      efficiency: baseEfficiency,
+      efficiency: 0,
       recombination: Math.min(96, 62 + sun * 22),
       status: "Charge separation; carriers accumulate at the contacts",
     };
@@ -60,5 +59,5 @@ export function calculateSolarReading(
     battery: current > 0.008 ? "Battery charging" : "Battery waiting for sufficient voltage",
   };
 
-  return { voltage, current, power, efficiency: baseEfficiency, recombination, status: statuses[load] };
+  return { voltage, current, power, efficiency: power / (irradiance * 0.0008), recombination, status: statuses[load] };
 }

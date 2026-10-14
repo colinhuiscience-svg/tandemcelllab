@@ -1,8 +1,8 @@
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { Environment, Lightformer, OrbitControls } from "@react-three/drei";
+import { Environment, Html, Lightformer, OrbitControls } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { BatteryCharging, CircleGauge, Fan, Lightbulb, Pause, Play, RotateCcw, Sun, Zap } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { createContext, Suspense, useContext, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import panelAsset from "@/assets/panel.stl.asset.json";
@@ -10,15 +10,28 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { calculateSolarReading, type LoadKind } from "@/lib/solar-model";
 
-const PALETTE = {
-  silicon: "#29a4b8",
-  perovskite: "#d89b36",
-  electron: "#56b8ff",
-  hole: "#ff846e",
-  contact: "#d9e2ea",
-  wire: "#6d7885",
-  photon: "#ffd657",
-};
+type Palette = Record<"silicon" | "perovskite" | "electron" | "hole" | "contact" | "wire" | "photon" | "canvas", string>;
+const ScenePalette = createContext<Palette | null>(null);
+function usePalette() {
+  const palette = useContext(ScenePalette);
+  if (!palette) throw new Error("Scene palette unavailable");
+  return palette;
+}
+function readPalette(): Palette {
+  const css = getComputedStyle(document.documentElement);
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 1;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas unavailable");
+  const color = (name: string) => {
+    ctx.clearRect(0, 0, 1, 1);
+    ctx.fillStyle = css.getPropertyValue(`--${name}`).trim();
+    ctx.fillRect(0, 0, 1, 1);
+    const pixel = ctx.getImageData(0, 0, 1, 1).data;
+    return `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`;
+  };
+  return { silicon: color("silicon"), perovskite: color("perovskite"), electron: color("electron"), hole: color("hole"), contact: color("contact"), wire: color("wire"), photon: color("photon"), canvas: color("canvas") };
+}
 
 const LOADS: Array<{ id: LoadKind; label: string; icon: typeof Lightbulb }> = [
   { id: "led", label: "LED", icon: Lightbulb },
@@ -29,15 +42,18 @@ const LOADS: Array<{ id: LoadKind; label: string; icon: typeof Lightbulb }> = [
 ];
 
 function UploadedPanel({ exploded }: { exploded: boolean }) {
+  const PALETTE = usePalette();
   const source = useLoader(STLLoader, panelAsset.url);
   const geometry = useMemo(() => {
     const clone = source.clone();
     clone.computeVertexNormals();
     clone.center();
-    const size = new THREE.Box3().setFromBufferAttribute(clone.attributes.position).getSize(new THREE.Vector3());
+    clone.computeBoundingBox();
+    const size = clone.boundingBox?.getSize(new THREE.Vector3()) ?? new THREE.Vector3(1, 1, 1);
     clone.scale(5.2 / Math.max(size.x, size.y, size.z), 5.2 / Math.max(size.x, size.y, size.z), 5.2 / Math.max(size.x, size.y, size.z));
     return clone;
   }, [source]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
 
   return (
     <mesh geometry={geometry} rotation={[-Math.PI / 2, 0, 0]} position={[-2.9, -0.35, exploded ? -1.7 : -0.85]} castShadow>
@@ -47,20 +63,41 @@ function UploadedPanel({ exploded }: { exploded: boolean }) {
 }
 
 function Layer({ y, color, width, depth, opacity = 1 }: { y: number; color: string; width: number; depth: number; opacity?: number }) {
+  const palette = usePalette();
+  const texture = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 128;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 0, 128, 128);
+      ctx.strokeStyle = palette.contact;
+      ctx.globalAlpha = 0.25;
+      ctx.lineWidth = 0.8;
+      for (let i = 8; i < 128; i += 16) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 128); ctx.stroke(); }
+    }
+    const map = new THREE.CanvasTexture(canvas);
+    map.colorSpace = THREE.SRGBColorSpace;
+    return map;
+  }, [color, palette.contact]);
+  useEffect(() => () => texture.dispose(), [texture]);
   return (
     <mesh position={[-2.9, y, 0]} castShadow receiveShadow>
       <boxGeometry args={[width, 0.18, depth]} />
-      <meshPhysicalMaterial color={color} transparent={opacity < 1} opacity={opacity} roughness={0.32} metalness={0.08} transmission={opacity < 1 ? 0.12 : 0} />
+      <meshPhysicalMaterial map={texture} transparent={opacity < 1} opacity={opacity} roughness={0.32} metalness={0.08} transmission={opacity < 1 ? 0.12 : 0} />
     </mesh>
   );
 }
 
 function Photons({ active }: { active: boolean }) {
+  const PALETTE = usePalette();
   const group = useRef<THREE.Group>(null);
-  useFrame((state) => {
+  const time = useRef(0);
+  useFrame((_, delta) => {
     if (!group.current || !active) return;
+    time.current += Math.min(delta, 0.05);
     group.current.children.forEach((child, index) => {
-      child.position.y = 4.6 - ((state.clock.elapsedTime * 1.25 + index * 0.55) % 3.3);
+      child.position.y = 4.6 - ((time.current * 1.25 + index * 0.55) % 3.3);
     });
   });
   return (
@@ -76,19 +113,22 @@ function Photons({ active }: { active: boolean }) {
 }
 
 function CarrierFlow({ current, active }: { current: number; active: boolean }) {
+  const PALETTE = usePalette();
   const group = useRef<THREE.Group>(null);
+  const time = useRef(0);
   const curve = useMemo(
     () => new THREE.CatmullRomCurve3([
       new THREE.Vector3(-0.7, 0.75, 0), new THREE.Vector3(0.1, 2.8, 0), new THREE.Vector3(3.7, 2.8, 0),
-      new THREE.Vector3(4.6, 0.6, 0), new THREE.Vector3(3.7, -2.6, 0), new THREE.Vector3(-1, -2.6, 0), new THREE.Vector3(-2.9, -1.15, 0),
+      new THREE.Vector3(3.7, 0.15, 0), new THREE.Vector3(3.7, -2.6, 0), new THREE.Vector3(-1, -2.6, 0), new THREE.Vector3(-2.9, -1.15, 0),
     ], true),
     [],
   );
-  useFrame((state) => {
+  useFrame((_, delta) => {
     if (!group.current) return;
     const speed = 0.08 + current * 2.5;
+    if (active) time.current += Math.min(delta, 0.05) * speed;
     group.current.children.forEach((child, index) => {
-      const t = active ? (state.clock.elapsedTime * speed + index / 18) % 1 : index / 18;
+      const t = (time.current + index / 18) % 1;
       child.position.copy(curve.getPointAt(t));
     });
   });
@@ -111,36 +151,41 @@ function CarrierFlow({ current, active }: { current: number; active: boolean }) 
 }
 
 function Recombination({ rate, active }: { rate: number; active: boolean }) {
+  const PALETTE = usePalette();
   const group = useRef<THREE.Group>(null);
-  useFrame((state) => {
+  const time = useRef(0);
+  useFrame((_, delta) => {
     if (!group.current || !active) return;
     const cycleSpeed = 0.45 + rate / 85;
+    time.current += Math.min(delta, 0.05) * cycleSpeed;
     for (let i = 0; i < group.current.children.length; i += 2) {
-      const phase = (state.clock.elapsedTime * cycleSpeed + i * 0.13) % 1;
+      const electron = group.current.children[i];
+      const hole = group.current.children[i + 1];
+      if (!electron || !hole) continue;
+      const phase = (time.current + i * 0.13) % 1;
       const pair = i / 2;
       const x = -4.25 + (pair % 4) * 0.85;
       const z = -0.65 + Math.floor(pair / 4) * 1.25;
       const separation = (1 - phase) * 0.34;
       const scale = phase > 0.82 ? (1 - phase) / 0.18 : 1;
-      group.current.children[i].position.set(x - separation, 0.48, z);
-      group.current.children[i + 1].position.set(x + separation, 0.48, z);
-      group.current.children[i].scale.setScalar(scale);
-      group.current.children[i + 1].scale.setScalar(scale);
+      electron.position.set(x - separation, 0.48, z);
+      hole.position.set(x + separation, 0.48, z);
+      electron.scale.setScalar(scale);
+      hole.scale.setScalar(scale);
     }
   });
   return (
     <group ref={group}>
-      {Array.from({ length: 8 }, (_, index) => (
-        <group key={index}>
-          <mesh><sphereGeometry args={[0.085, 10, 10]} /><meshBasicMaterial color={PALETTE.electron} /></mesh>
-          <mesh><torusGeometry args={[0.085, 0.025, 8, 12]} /><meshBasicMaterial color={PALETTE.hole} /></mesh>
-        </group>
-      )).flatMap((pair) => pair.props.children)}
+      {Array.from({ length: 8 }, (_, index) => [
+        <mesh key={`electron-${index}`}><sphereGeometry args={[0.085, 10, 10]} /><meshBasicMaterial color={PALETTE.electron} /></mesh>,
+        <mesh key={`hole-${index}`}><torusGeometry args={[0.085, 0.025, 8, 12]} /><meshBasicMaterial color={PALETTE.hole} /></mesh>,
+      ]).flat()}
     </group>
   );
 }
 
 function LoadObject({ load, active }: { load: LoadKind; active: boolean }) {
+  const PALETTE = usePalette();
   const rotor = useRef<THREE.Group>(null);
   useFrame((_, delta) => {
     if (rotor.current && load === "motor" && active) rotor.current.rotation.z -= Math.min(delta, 0.05) * 7;
@@ -158,15 +203,16 @@ function LoadObject({ load, active }: { load: LoadKind; active: boolean }) {
 }
 
 function Scene({ exploded, irradiance, reading, load, running }: { exploded: boolean; irradiance: number; reading: ReturnType<typeof calculateSolarReading>; load: LoadKind; running: boolean }) {
+  const PALETTE = usePalette();
   const gap = exploded ? 0.62 : 0.21;
   const flowing = running && reading.current > 0.002;
   return (
     <>
-      <color attach="background" args={["#e9eef2"]} />
+      <color attach="background" args={[PALETTE.canvas]} />
       <ambientLight intensity={0.7} />
       <directionalLight position={[-6, 10, 8]} intensity={2.2} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
       <Environment><Lightformer intensity={1.7} position={[0, 7, 2]} scale={[12, 6, 1]} /><Lightformer intensity={0.8} position={[7, 1, 3]} rotation-y={Math.PI / 2} scale={[8, 3, 1]} /></Environment>
-      <UploadedPanel exploded={exploded} />
+      <Suspense fallback={<Html center><span className="model-loading">Loading panel…</span></Html>}><UploadedPanel exploded={exploded} /></Suspense>
       <group position-y={-0.8}>
         <Layer y={gap * 3} color={PALETTE.contact} width={4.4} depth={2.55} opacity={0.35} />
         <Layer y={gap * 2} color={PALETTE.perovskite} width={4.25} depth={2.45} opacity={0.9} />
@@ -189,6 +235,8 @@ export function SolarSimulation() {
   const [load, setLoad] = useState<LoadKind>("led");
   const [exploded, setExploded] = useState(true);
   const [running, setRunning] = useState(true);
+  const [palette] = useState(readPalette);
+  useEffect(() => { if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) setRunning(false); }, []);
   const reading = useMemo(() => calculateSolarReading(irradiance, temperature, load), [irradiance, temperature, load]);
 
   return (
@@ -221,14 +269,14 @@ export function SolarSimulation() {
             </div>
           </div>
           <div className="status-readout"><span className={running ? "live-dot" : "live-dot paused"} />{running ? reading.status : "Simulation paused"}</div>
+          <div className="layer-key"><p className="section-label">SCHEMATIC LAYERS · TOP TO BOTTOM</p><p>Transparent front contact</p><p><i className="dot perovskite" />Perovskite · 1.68 eV</p><p>Recombination junction</p><p><i className="dot silicon" />Silicon · 1.12 eV</p><p>Rear metal contact</p></div>
         </aside>
 
         <div className="viewport-wrap">
           <Canvas shadows dpr={[1, 1.5]} camera={{ position: [8.8, 7.2, 10.5], fov: 43 }} gl={{ antialias: true }}>
-            <Scene exploded={exploded} irradiance={irradiance} reading={reading} load={load} running={running} />
+            <ScenePalette.Provider value={palette}><Scene exploded={exploded} irradiance={irradiance} reading={reading} load={load} running={running} /></ScenePalette.Provider>
           </Canvas>
           <div className="legend" aria-label="Particle legend"><span><i className="dot electron" />Electron</span><span><i className="dot hole" />Hole</span><span><i className="dot photon" />Photon</span></div>
-          <p className="orbit-note">Drag to orbit · scroll to zoom</p>
         </div>
       </section>
 
@@ -239,7 +287,7 @@ export function SolarSimulation() {
         <div className="metric"><span>EFFICIENCY</span><strong>{(reading.efficiency * 100).toFixed(1)} <small>%</small></strong></div>
         <div className="metric recombination"><span>RECOMBINATION</span><strong>{reading.recombination.toFixed(0)} <small>% relative</small></strong><div className="meter"><i style={{ width: `${reading.recombination}%` }} /></div></div>
       </section>
-      <footer className="sim-footer"><span>Illustrative two-terminal tandem model</span><span>Blue carriers move opposite conventional current</span></footer>
+      <footer className="sim-footer"><span>Educational model · schematic layers, not to scale · assumed active area: 8 cm²</span><span>Not calibrated to uploaded STL · recombination is illustrative</span></footer>
     </main>
   );
 }

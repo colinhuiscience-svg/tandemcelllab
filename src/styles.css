@@ -87,6 +87,10 @@
   --hole: oklch(0.69 0.17 32);
   --photon: oklch(0.82 0.17 86);
   --surface-tint: oklch(0.97 0.008 165);
+  --silicon: oklch(0.64 0.11 205);
+  --perovskite: oklch(0.73 0.14 78);
+  --contact: oklch(0.88 0.012 220);
+  --wire: oklch(0.52 0.02 240);
   --font-body: "Manrope", sans-serif;
   --font-numeric: "IBM Plex Mono", monospace;
   --chart-1: oklch(0.646 0.222 41.116);
@@ -171,6 +175,11 @@
 .status-readout { display: flex; align-items: flex-start; gap: 8px; font-size: 11px; line-height: 1.6; color: var(--muted-foreground); padding-top: 5px; }
 .live-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); margin-top: 6px; flex-shrink: 0; }
 .live-dot.paused { background: var(--muted-foreground); }
+.layer-key { margin-top: 30px; border-top: 1px solid var(--border); padding-top: 16px; font-size: 10px; color: var(--muted-foreground); }
+.layer-key p { display: flex; align-items: center; gap: 7px; margin: 8px 0; }
+.dot.perovskite { background: var(--perovskite); }
+.dot.silicon { background: var(--silicon); }
+.model-loading { font-size: 12px; color: var(--muted-foreground); }
 .viewport-wrap { min-width: 0; position: relative; background: var(--canvas); overflow: hidden; }
 .viewport-wrap canvas { touch-action: none; }
 .legend { position: absolute; top: 22px; left: 24px; display: flex; gap: 20px; font-size: 10px; color: var(--muted-foreground); pointer-events: none; }
@@ -211,6 +220,7 @@
   .load-grid { grid-template-columns: repeat(5, 1fr); gap: 5px; }
   .load-button { height: 60px; padding: 6px; font-size: 10px; }
   .status-readout { margin-bottom: 20px; }
+  .layer-key { grid-column: 1 / -1; margin: 0 0 16px; }
   .legend { top: 15px; left: 15px; gap: 16px; }
   .measurement-strip { grid-template-columns: repeat(3, 1fr); gap: 28px 0; }
   .metric:nth-child(3) { border-right: 0; }
