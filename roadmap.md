@@ -5,7 +5,7 @@
 - [x] Verify live simulation and mobile layout.
 
 ## Complete layer exploration
-- [ ] Add all 17 tandem layers and collapsible introductions.
-- [ ] Add scene selection and layer-focused details.
-- [ ] Add commercial tandem, LONGi record tandem, and silicon presets.
-- [ ] Verify layer selection, presets, and responsive layout.
+- [x] Add all 17 tandem layers and collapsible introductions.
+- [x] Add scene selection and layer-focused details.
+- [x] Add commercial tandem, LONGi record tandem, and silicon presets.
+- [x] Verify layer selection, presets, and responsive layout.
