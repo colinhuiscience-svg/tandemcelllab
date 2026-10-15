@@ -44,7 +44,7 @@ export const SILICON_LAYERS: SolarLayer[] = [
 
 export const PANEL_PRESETS = {
   commercial: { name: "Commercial tandem", shortName: "Commercial tandem", efficiency: 0.28, voc: 1.82, temperatureCoefficient: -0.0025, note: "Representative 28% cell-level assumption; not a commercial module rating.", layers: TANDEM_LAYERS },
-  longi: { name: "LONGi record tandem", shortName: "LONGi · 36.1%", efficiency: 0.361, voc: 1.97, temperatureCoefficient: -0.002, note: "36.1% certified research-cell benchmark. The 17-layer stack is illustrative, not LONGi's disclosed architecture.", layers: TANDEM_LAYERS },
+  longi: { name: "LONGi record tandem", shortName: "LONGi · 35.5%", efficiency: 0.355, voc: 1.97, temperatureCoefficient: -0.002, note: "35.5% ESTI-certified research-cell benchmark (July 2026), approximately 36%. The stack is illustrative, not LONGi's proprietary architecture.", layers: TANDEM_LAYERS },
   silicon: { name: "Regular silicon cell", shortName: "Regular silicon", efficiency: 0.22, voc: 0.74, temperatureCoefficient: -0.0035, note: "Representative 22% single-junction silicon cell; generic 11-entry schematic.", layers: SILICON_LAYERS },
 } satisfies Record<PanelKind, { name: string; shortName: string; efficiency: number; voc: number; temperatureCoefficient: number; note: string; layers: SolarLayer[] }>;
 

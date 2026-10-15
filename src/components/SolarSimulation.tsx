@@ -298,7 +298,7 @@ export function SolarSimulation() {
         </aside>
 
         <div className="viewport-wrap">
-          <Canvas shadows dpr={[1, 1.5]} camera={{ position: [8.8, 7.2, 10.5], fov: 43 }} gl={{ antialias: true }}>
+          <Canvas key={panel} shadows dpr={[1, 1.5]} camera={{ position: [8.8, 7.2, 10.5], fov: 43 }} gl={{ antialias: true }}>
             <ScenePalette.Provider value={palette}><Scene exploded={exploded} irradiance={irradiance} reading={reading} load={load} running={running} layers={preset.layers} selected={selected} onSelect={setSelected} original={original} /></ScenePalette.Provider>
           </Canvas>
           <div className="legend" aria-label="Particle legend"><span><i className="dot electron" />Electron</span><span><i className="dot hole" />Hole</span><span><i className="dot photon" />Photon</span></div>
