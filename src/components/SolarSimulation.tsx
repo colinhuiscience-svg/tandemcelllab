@@ -271,7 +271,7 @@ export function SolarSimulation() {
 
       <section className="preset-band" aria-label="Solar panel options">
         <div className="preset-options">{(["commercial", "longi", "silicon"] as const).map((kind) => <Button key={kind} variant={panel === kind ? "default" : "outline"} aria-pressed={panel === kind} className="preset-option" onClick={() => { setPanel(kind); setSelected(null); }}><span>{PANEL_PRESETS[kind].shortName}</span><small>{(PANEL_PRESETS[kind].efficiency * 100).toFixed(1)}% reference</small></Button>)}</div>
-        <p className="preset-note">{preset.note}</p>
+        <p className="preset-note">{preset.note}{panel === "longi" && <> <a className="text-primary underline" href="https://www.longi.com/en/news/crystalline-silicon-perovskite-tandem-solar-cell-new-world-efficiency-2026/" target="_blank" rel="noreferrer">LONGi certification announcement</a></>}</p>
       </section>
 
       <section className="sim-layout">
