@@ -49,5 +49,17 @@ export const PANEL_PRESETS = {
 } satisfies Record<PanelKind, { name: string; shortName: string; efficiency: number; voc: number; temperatureCoefficient: number; note: string; layers: SolarLayer[] }>;
 
 export function layerHeight(index: number, count: number, exploded: boolean): number {
-  return ((count - 1) / 2 - index) * (exploded ? 0.36 : 0.095);
+  return ((count - 1) / 2 - index) * (exploded ? 0.36 : 0.028);
+}
+
+// Preserve supplied numbering in the explorer; assemble passivation against silicon.
+export function physicalLayerOrder(layers: SolarLayer[]): SolarLayer[] {
+  const ordered = [...layers];
+  const metal = ordered.findIndex((layer) => layer.id === "rear-contact");
+  const passivation = ordered.findIndex((layer) => layer.id === "rear-shj");
+  if (metal >= 0 && passivation > metal) {
+    const film = ordered.splice(passivation, 1)[0];
+    if (film) ordered.splice(metal, 0, film);
+  }
+  return ordered;
 }
