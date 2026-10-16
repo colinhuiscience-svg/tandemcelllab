@@ -53,6 +53,7 @@ export function LayerInteractions({ layers, exploded, selected, running, irradia
       // Some pairs meet in the absorber; extracted carriers follow selective contacts.
       const lost = (i % 5) / 5 < recombination * 0.65;
       [electrons.current, holes.current].forEach((mesh, kind) => {
+        if (!mesh) return;
         const route = kind === 0 ? packet.electron : packet.hole;
         const point = lost ? new THREE.Vector3(x + (kind === 0 ? -1 : 1) * 0.25 * (1 - t), end, zOf(packet.destination, z)) : routePoint(route, t, x + (kind === 0 ? -0.12 : 0.12), z);
         dummy.position.copy(point);

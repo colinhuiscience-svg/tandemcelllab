@@ -93,7 +93,8 @@ function Layer({ layer, y, focused, dimmed, exploded, onSelect }: { layer: Solar
   useEffect(() => () => texture.dispose(), [texture]);
   const relief = useMemo(() => {
     const geometry = new THREE.PlaneGeometry(4.25, 2.55, 40, 24);
-    const positions = geometry.attributes.position;
+    const positions = geometry.getAttribute("position");
+    if (!positions) return geometry;
     for (let i = 0; i < positions.count; i++) {
       const x = positions.getX(i), z = positions.getY(i);
       const ridge = (1 - Math.abs(Math.sin(x * Math.PI / 0.34))) * (1 - Math.abs(Math.sin(z * Math.PI / 0.34)));
