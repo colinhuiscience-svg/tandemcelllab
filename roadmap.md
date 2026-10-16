@@ -9,3 +9,10 @@
 - [x] Add scene selection and layer-focused details.
 - [x] Add commercial tandem, LONGi record tandem, and silicon presets.
 - [x] Verify layer selection, presets, and responsive layout.
+
+## Coupled solar-cell behavior
+- [ ] Show photon transmission, absorber generation, selective transport and junction recombination.
+- [ ] Merge layers into a compact cell and exaggerate silicon texture.
+- [ ] Check electrical assumptions, support series cells, and explain all readings.
+- [ ] Verify scientific details and add the supplied watermark.
+- [ ] Test layer interactions, electrical controls and tablet/mobile rendering.
