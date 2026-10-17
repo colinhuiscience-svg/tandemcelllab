@@ -270,7 +270,7 @@ export function SolarSimulation() {
         </aside>
 
         <div className="viewport-wrap">
-          <Canvas key={panel} shadows dpr={[1, 1.5]} camera={{ position: [8.8, 7.2, 10.5], fov: 43 }} gl={{ antialias: true }}>
+          <Canvas key={`${panel}|${exploded}|${load}|${selected ?? "none"}|${original}`} shadows dpr={[1, 1.5]} camera={{ position: [8.8, 7.2, 10.5], fov: 43 }} gl={{ antialias: true }}>
             <ScenePalette.Provider value={palette}><Scene exploded={exploded} irradiance={irradiance} reading={reading} load={load} running={running} layers={sceneLayers} selected={selected} onSelect={setSelected} original={original} /></ScenePalette.Provider>
           </Canvas>
           <div className="scene-state">{exploded ? "Schematic cross-section" : "Assembled cell · exaggerated films"} · {seriesCells} cell{seriesCells > 1 ? "s" : ""} in circuit</div>
