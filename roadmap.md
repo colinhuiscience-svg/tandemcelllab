@@ -11,8 +11,15 @@
 - [x] Verify layer selection, presets, and responsive layout.
 
 ## Coupled solar-cell behavior
-- [ ] Show photon transmission, absorber generation, selective transport and junction recombination.
-- [ ] Merge layers into a compact cell and exaggerate silicon texture.
-- [ ] Check electrical assumptions, support series cells, and explain all readings.
-- [ ] Verify scientific details and add the supplied watermark.
-- [ ] Test layer interactions, electrical controls and tablet/mobile rendering.
+- [x] Show photon transmission, absorber generation, selective transport and junction recombination.
+- [x] Merge layers into a compact cell and exaggerate silicon texture.
+- [x] Check electrical assumptions, support series cells, and explain all readings.
+- [x] Verify scientific details and add the supplied watermark.
+- [x] Test layer interactions, electrical controls and tablet/mobile rendering.
+
+## Accuracy & clarity fixes
+- [x] Unify photon colors (warm gold), enlarge particles, add halos and direction arrowheads.
+- [x] Fix motor rotor spinning off-axis; add axle.
+- [x] Beginner-friendly notes with live formulas for load efficiency and recombination proxy.
+- [x] Show silicon LED note only on the silicon preset.
+- [x] Fix merge/load/layer-focus crash (scene remount on structural changes).
