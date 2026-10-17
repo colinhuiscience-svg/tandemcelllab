@@ -11,8 +11,11 @@ const BANDS: PhotonBand[] = ["visible", "infrared", "visible", "infrared", "subg
 /** Qualitative event paths; timings and packet counts are not a spectral solver. */
 export function LayerInteractions({ layers, exploded, selected, running, irradiance, current, recombination, colors }: Props) {
   const photons = useRef<THREE.InstancedMesh>(null);
+  const halos = useRef<THREE.InstancedMesh>(null);
   const electrons = useRef<THREE.InstancedMesh>(null);
+  const electronArrows = useRef<THREE.InstancedMesh>(null);
   const holes = useRef<THREE.InstancedMesh>(null);
+  const holeArrows = useRef<THREE.InstancedMesh>(null);
   const impacts = useRef<THREE.InstancedMesh>(null);
   const time = useRef(0);
   const dummy = useMemo(() => new THREE.Object3D(), []);
@@ -29,10 +32,10 @@ export function LayerInteractions({ layers, exploded, selected, running, irradia
     const a = route[Math.floor(location)] ?? "silicon";
     const b = route[Math.min(route.length - 1, Math.floor(location) + 1)] ?? a;
     const mix = location % 1;
-    return new THREE.Vector3(x, THREE.MathUtils.lerp(yOf(a), yOf(b), mix) + 0.065, THREE.MathUtils.lerp(zOf(a, z), zOf(b, z), mix));
+    return new THREE.Vector3(x, THREE.MathUtils.lerp(yOf(a), yOf(b), mix) + 0.11, THREE.MathUtils.lerp(zOf(a, z), zOf(b, z), mix));
   };
   useFrame((_, rawDelta) => {
-    if (!photons.current || !electrons.current || !holes.current || !impacts.current) return;
+    if (!photons.current || !electrons.current || !holes.current || !impacts.current || !halos.current || !electronArrows.current || !holeArrows.current) return;
     if (running) time.current += Math.min(rawDelta, 0.05) * Math.max(0.15, irradiance / 1000) * 0.23;
     const lit = irradiance > 0;
     packets.forEach((packet, i) => {
@@ -43,11 +46,17 @@ export function LayerInteractions({ layers, exploded, selected, running, irradia
       const end = yOf(packet.destination) + 0.07;
       const travel = Math.min(1, phase / 0.55);
       const y = packet.band === "reflected" && travel > 0.5 ? yOf("glass") + (travel - 0.5) * 3.6 : THREE.MathUtils.lerp(top, end, travel);
+      const photonVisible = lit && phase < 0.55;
+      // All photon packets share one warm sunlight colour; sub-gap packets are dimmer to show they carry less usable energy.
+      const dim = packet.band === "subgap" ? 0.45 : 1;
       dummy.position.set(x, y, zOf(packet.destination, z) * travel + z * (1 - travel));
-      dummy.scale.setScalar(lit && phase < 0.55 ? 1 : 0);
-      dummy.rotation.set(0, 0, 0); dummy.updateMatrix();
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.setScalar(photonVisible ? dim : 0);
+      dummy.updateMatrix();
       photons.current?.setMatrixAt(i, dummy.matrix);
-      photons.current?.setColorAt(i, new THREE.Color(packet.band === "infrared" || packet.band === "subgap" ? colors.silicon : colors.photon));
+      dummy.scale.setScalar(photonVisible ? dim * 2.1 : 0);
+      dummy.updateMatrix();
+      halos.current?.setMatrixAt(i, dummy.matrix);
       const generated = packet.destination === "silicon" || packet.destination === "perovskite";
       const t = Math.max(0, (phase - 0.55) / 0.45);
       // Some pairs meet in the absorber; extracted carriers follow selective contacts.
@@ -55,24 +64,38 @@ export function LayerInteractions({ layers, exploded, selected, running, irradia
       [electrons.current, holes.current].forEach((mesh, kind) => {
         if (!mesh) return;
         const route = kind === 0 ? packet.electron : packet.hole;
-        const point = lost ? new THREE.Vector3(x + (kind === 0 ? -1 : 1) * 0.25 * (1 - t), end, zOf(packet.destination, z)) : routePoint(route, t, x + (kind === 0 ? -0.12 : 0.12), z);
+        const point = lost ? new THREE.Vector3(x + (kind === 0 ? -1 : 1) * 0.25 * (1 - t), end, zOf(packet.destination, z)) : routePoint(route, t, x + (kind === 0 ? -0.16 : 0.16), z);
+        const size = lit && generated && phase >= 0.55 ? Math.max(0, lost ? 1 - t : t > 0.88 ? (1 - t) / 0.12 : 1) : 0;
         dummy.position.copy(point);
-        dummy.scale.setScalar(lit && generated && phase >= 0.55 ? Math.max(0, lost ? 1 - t : t > 0.88 ? (1 - t) / 0.12 : 1) : 0);
-        dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix);
+        dummy.rotation.set(0, 0, 0);
+        dummy.scale.setScalar(size);
+        dummy.updateMatrix();
+        mesh.setMatrixAt(i, dummy.matrix);
+        // Direction arrowheads: electrons drift up toward the front contact, holes down toward the rear.
+        const arrow = kind === 0 ? electronArrows.current : holeArrows.current;
+        if (arrow) {
+          dummy.position.copy(point).add(new THREE.Vector3(0, (kind === 0 ? 1 : -1) * 0.22 * size, 0));
+          dummy.rotation.set(kind === 0 ? 0 : Math.PI, 0, 0);
+          dummy.scale.setScalar(size);
+          dummy.updateMatrix();
+          arrow.setMatrixAt(i, dummy.matrix);
+        }
       });
       dummy.position.set(x, end + 0.04, zOf(packet.destination, z));
       dummy.rotation.set(-Math.PI / 2, 0, 0);
       const pulse = (phase - 0.5) / 0.1;
-      dummy.scale.setScalar(lit && generated && pulse > 0 && pulse < 1 ? pulse * 2 : 0);
+      dummy.scale.setScalar(lit && generated && pulse > 0 && pulse < 1 ? pulse * 2.6 : 0);
       dummy.updateMatrix(); impacts.current?.setMatrixAt(i, dummy.matrix);
     });
-    [photons.current, electrons.current, holes.current, impacts.current].forEach((mesh) => { mesh.instanceMatrix.needsUpdate = true; });
-    if (photons.current.instanceColor) photons.current.instanceColor.needsUpdate = true;
+    [photons.current, halos.current, electrons.current, electronArrows.current, holes.current, holeArrows.current, impacts.current].forEach((mesh) => { mesh.instanceMatrix.needsUpdate = true; });
   });
   return <group name="coupled-layer-interactions" userData={{ schematic: true, current }}>
-    <instancedMesh ref={photons} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={10}><sphereGeometry args={[0.075, 10, 8]} /><meshBasicMaterial color={colors.photon} depthTest={false} /></instancedMesh>
-    <instancedMesh ref={electrons} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={11}><sphereGeometry args={[0.07, 10, 8]} /><meshBasicMaterial color={colors.electron} depthTest={false} /></instancedMesh>
-    <instancedMesh ref={holes} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={11}><torusGeometry args={[0.08, 0.023, 6, 10]} /><meshBasicMaterial color={colors.hole} depthTest={false} /></instancedMesh>
-    <instancedMesh ref={impacts} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={9}><ringGeometry args={[0.1, 0.14, 16]} /><meshBasicMaterial color={colors.photon} side={THREE.DoubleSide} depthTest={false} /></instancedMesh>
+    <instancedMesh ref={halos} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={9}><sphereGeometry args={[0.15, 12, 10]} /><meshBasicMaterial color={colors.photon} transparent opacity={0.22} depthTest={false} /></instancedMesh>
+    <instancedMesh ref={photons} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={10}><sphereGeometry args={[0.15, 12, 10]} /><meshBasicMaterial color={colors.photon} depthTest={false} /></instancedMesh>
+    <instancedMesh ref={electrons} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={11}><sphereGeometry args={[0.13, 12, 10]} /><meshBasicMaterial color={colors.electron} depthTest={false} /></instancedMesh>
+    <instancedMesh ref={electronArrows} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={11}><coneGeometry args={[0.09, 0.2, 8]} /><meshBasicMaterial color={colors.electron} depthTest={false} /></instancedMesh>
+    <instancedMesh ref={holes} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={11}><torusGeometry args={[0.13, 0.045, 8, 12]} /><meshBasicMaterial color={colors.hole} depthTest={false} /></instancedMesh>
+    <instancedMesh ref={holeArrows} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={11}><coneGeometry args={[0.09, 0.2, 8]} /><meshBasicMaterial color={colors.hole} depthTest={false} /></instancedMesh>
+    <instancedMesh ref={impacts} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={9}><ringGeometry args={[0.14, 0.2, 16]} /><meshBasicMaterial color={colors.photon} side={THREE.DoubleSide} depthTest={false} /></instancedMesh>
   </group>;
 }
