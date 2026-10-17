@@ -293,3 +293,13 @@
 .author-watermark { width: 100px; height: 58px; object-fit: cover; object-position: 50% 50%; flex-shrink: 0; mix-blend-mode: multiply; }
 .sim-footer { align-items: center; }
 @media (max-width: 640px) { .series-control { grid-column: 1 / -1; margin: 0; }.notes-grid { grid-template-columns: 1fr; gap: 18px; }.sim-footer { align-items: flex-start; }.scene-state { top: 42px; }.sim-header { flex-wrap: wrap; }.header-actions { flex-shrink: 0; } }
+
+.science-notes .formula {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.95rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: color-mix(in oklch, var(--silicon) 12%, transparent);
+  border: 1px solid color-mix(in oklch, var(--silicon) 30%, transparent);
+  margin: 0.4rem 0;
+}

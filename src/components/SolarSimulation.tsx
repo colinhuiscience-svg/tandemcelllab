@@ -162,7 +162,10 @@ function LoadObject({ load, active }: { load: LoadKind; active: boolean }) {
     <group position={[3.7, 0.15, 0]}>
       <mesh castShadow><cylinderGeometry args={[0.66, 0.66, 0.32, 32]} /><meshStandardMaterial color={PALETTE.contact} roughness={0.25} metalness={0.45} /></mesh>
       {load === "led" && <mesh position={[0, 0.58, 0]}><sphereGeometry args={[0.38, 24, 24]} /><meshStandardMaterial color={PALETTE.photon} emissive={PALETTE.photon} emissiveIntensity={active ? 2.4 : 0.08} transparent opacity={0.75} /></mesh>}
-      {load === "motor" && <group ref={rotor} position={[0, 0, 0.2]}>{[0, 1, 2].map((i) => <mesh key={i} rotation-z={(i * Math.PI * 2) / 3} position={[0, 0.46, 0]}><boxGeometry args={[0.18, 0.75, 0.08]} /><meshStandardMaterial color={PALETTE.silicon} /></mesh>)}</group>}
+      {load === "motor" && <group position={[0, 0.1, 0.2]}>
+        <mesh rotation-x={Math.PI / 2}><cylinderGeometry args={[0.07, 0.07, 0.5, 12]} /><meshStandardMaterial color={PALETTE.contact} metalness={0.6} roughness={0.3} /></mesh>
+        <group ref={rotor}>{[0, 1, 2].map((i) => <mesh key={i} rotation-z={(i * Math.PI * 2) / 3} position={[0, 0.3, 0]}><boxGeometry args={[0.16, 0.9, 0.06]} /><meshStandardMaterial color={PALETTE.silicon} /></mesh>)}</group>
+      </group>}
       {load === "resistor" && <mesh rotation-z={Math.PI / 2}><boxGeometry args={[0.28, 1.1, 0.28]} /><meshStandardMaterial color={PALETTE.perovskite} /></mesh>}
       {load === "battery" && <group><mesh><boxGeometry args={[0.62, 1.1, 0.42]} /><meshStandardMaterial color={PALETTE.silicon} /></mesh><mesh position={[0, 0.68, 0]}><boxGeometry args={[0.18, 0.25, 0.18]} /><meshStandardMaterial color={PALETTE.contact} /></mesh></group>}
       {load === "open" && <><mesh position={[-0.27, 0.5, 0]} rotation-z={-0.45}><boxGeometry args={[0.08, 0.9, 0.08]} /><meshStandardMaterial color={PALETTE.contact} /></mesh><mesh position={[0.27, 0.45, 0]}><boxGeometry args={[0.08, 0.4, 0.08]} /><meshStandardMaterial color={PALETTE.contact} /></mesh></>}
@@ -267,7 +270,7 @@ export function SolarSimulation() {
         </aside>
 
         <div className="viewport-wrap">
-          <Canvas key={panel} shadows dpr={[1, 1.5]} camera={{ position: [8.8, 7.2, 10.5], fov: 43 }} gl={{ antialias: true }}>
+          <Canvas key={`${panel}|${exploded}|${load}|${selected ?? "none"}|${original}`} shadows dpr={[1, 1.5]} camera={{ position: [8.8, 7.2, 10.5], fov: 43 }} gl={{ antialias: true }}>
             <ScenePalette.Provider value={palette}><Scene exploded={exploded} irradiance={irradiance} reading={reading} load={load} running={running} layers={sceneLayers} selected={selected} onSelect={setSelected} original={original} /></ScenePalette.Provider>
           </Canvas>
           <div className="scene-state">{exploded ? "Schematic cross-section" : "Assembled cell · exaggerated films"} · {seriesCells} cell{seriesCells > 1 ? "s" : ""} in circuit</div>
@@ -284,7 +287,7 @@ export function SolarSimulation() {
         <div className="metric"><span>LOAD CONVERSION</span><strong>{(reading.efficiency * 100).toFixed(1)} <small>%</small></strong></div>
         <div className="metric recombination"><span>RECOMBINATION PROXY</span><strong>{reading.recombination.toFixed(2)} <small>index · 0–1</small></strong><div className="meter"><i style={{ width: `${reading.recombination * 100}%` }} /></div></div>
       </section>
-      <SimulationNotes reading={reading} />
+      <SimulationNotes reading={reading} panel={panel} />
       <footer className="sim-footer"><span>Educational model · schematic layers, not to scale · assumed active area: 8 cm² per cell</span><span>Not calibrated to uploaded STL · recombination is illustrative</span><img className="author-watermark" src={watermark.url} alt="C. Hui watermark" /></footer>
     </main>
   );
