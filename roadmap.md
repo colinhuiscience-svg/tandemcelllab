@@ -23,3 +23,8 @@
 - [x] Beginner-friendly notes with live formulas for load efficiency and recombination proxy.
 - [x] Show silicon LED note only on the silicon preset.
 - [x] Fix merge/load/layer-focus crash (scene remount on structural changes).
+
+## Loading screen & watermark (done)
+- [x] Brushstroke animated loading screen with watermark on entry
+- [x] Watermark also shown in the page header
+- [x] Recombination proxy math re-verified (1 − I/Isc, consistent with display and formula)
