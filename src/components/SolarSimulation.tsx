@@ -5,7 +5,7 @@ import { BatteryCharging, CircleGauge, Fan, Lightbulb, Pause, Play, RotateCcw, S
 import { createContext, Suspense, useContext, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
-import watermark from "@/assets/chui-watermark.jpg.asset.json";
+import watermark from "@/assets/chui-watermark.png.asset.json";
 import { LayerInteractions } from "./LayerInteractions";
 import { LoadingScreen } from "./LoadingScreen";
 import { SimulationNotes } from "./SimulationNotes";
@@ -287,6 +287,7 @@ export function SolarSimulation() {
         <div className="metric"><span>CURRENT</span><strong>{(reading.current * 1000).toFixed(0)} <small>mA</small></strong></div>
         <div className="metric"><span>POWER</span><strong>{(reading.power * 1000).toFixed(0)} <small>mW</small></strong></div>
         <div className="metric"><span>LOAD CONVERSION</span><strong>{(reading.efficiency * 100).toFixed(1)} <small>%</small></strong></div>
+        <div className="metric"><span>COST PER WATT</span><strong>${preset.costPerWatt.toFixed(2)} <small>/W · assumed</small></strong></div>
         <div className="metric recombination"><span>RECOMBINATION PROXY</span><strong>{reading.recombination.toFixed(2)} <small>index · 0–1</small></strong><div className="meter"><i style={{ width: `${reading.recombination * 100}%` }} /></div></div>
       </section>
       <SimulationNotes reading={reading} panel={panel} />
