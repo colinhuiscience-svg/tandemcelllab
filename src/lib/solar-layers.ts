@@ -43,10 +43,10 @@ export const SILICON_LAYERS: SolarLayer[] = [
 ].filter((layer): layer is SolarLayer => Boolean(layer)).map((layer, index) => ({ ...layer, number: index + 1 }));
 
 export const PANEL_PRESETS = {
-  commercial: { name: "Commercial tandem", shortName: "Commercial tandem", efficiency: 0.28, voc: 1.82, temperatureCoefficient: -0.0025, note: "Representative 28% cell-level assumption; not a commercial module rating.", layers: TANDEM_LAYERS },
-  longi: { name: "LONGi record tandem", shortName: "LONGi · 35.5%", efficiency: 0.355, voc: 1.97, temperatureCoefficient: -0.002, note: "35.5% ESTI-certified research-cell benchmark (July 2026), approximately 36%. The stack is illustrative, not LONGi's proprietary architecture.", layers: TANDEM_LAYERS },
-  silicon: { name: "Regular silicon cell", shortName: "Regular silicon", efficiency: 0.22, voc: 0.74, temperatureCoefficient: -0.0035, note: "Representative 22% single-junction silicon cell; generic 11-entry schematic.", layers: SILICON_LAYERS },
-} satisfies Record<PanelKind, { name: string; shortName: string; efficiency: number; voc: number; temperatureCoefficient: number; note: string; layers: SolarLayer[] }>;
+  commercial: { name: "Commercial tandem", shortName: "Commercial tandem", efficiency: 0.28, voc: 1.82, temperatureCoefficient: -0.0025, costPerWatt: 0.55, note: "Representative 28% cell-level assumption; not a commercial module rating.", layers: TANDEM_LAYERS },
+  longi: { name: "LONGi record tandem", shortName: "LONGi · 35.5%", efficiency: 0.355, voc: 1.97, temperatureCoefficient: -0.002, costPerWatt: 3.5, note: "35.5% ESTI-certified research-cell benchmark (July 2026), approximately 36%. The stack is illustrative, not LONGi's proprietary architecture.", layers: TANDEM_LAYERS },
+  silicon: { name: "Regular silicon cell", shortName: "Regular silicon", efficiency: 0.22, voc: 0.74, temperatureCoefficient: -0.0035, costPerWatt: 0.28, note: "Representative 22% single-junction silicon cell; generic 11-entry schematic.", layers: SILICON_LAYERS },
+} satisfies Record<PanelKind, { name: string; shortName: string; efficiency: number; voc: number; temperatureCoefficient: number; note: string; layers: SolarLayer[]; costPerWatt: number }>;
 
 export function layerHeight(index: number, count: number, exploded: boolean): number {
   return ((count - 1) / 2 - index) * (exploded ? 0.36 : 0.028);
