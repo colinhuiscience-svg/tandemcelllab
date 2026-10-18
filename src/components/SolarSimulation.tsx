@@ -7,6 +7,7 @@ import * as THREE from "three";
 
 import watermark from "@/assets/chui-watermark.jpg.asset.json";
 import { LayerInteractions } from "./LayerInteractions";
+import { LoadingScreen } from "./LoadingScreen";
 import { SimulationNotes } from "./SimulationNotes";
 import panelAsset from "@/assets/panel.stl.asset.json";
 import { Button } from "@/components/ui/button";
@@ -232,8 +233,9 @@ export function SolarSimulation() {
 
   return (
     <main className="sim-shell">
+      <LoadingScreen />
       <header className="sim-header">
-        <div><p className="eyebrow">SOLAR CELL LAB</p><h1>{panel === "silicon" ? "Crystalline silicon" : "Silicon × Perovskite"}</h1></div>
+        <div className="header-title"><img className="author-watermark header-watermark" src={watermark.url} alt="C. Hui watermark" /><div><p className="eyebrow">SOLAR CELL LAB</p><h1>{panel === "silicon" ? "Crystalline silicon" : "Silicon × Perovskite"}</h1></div></div>
         <div className="header-actions">
           <Button variant="outline" size="sm" aria-pressed={!exploded} onClick={() => { setExploded((value) => !value); setSelected(null); }}><RotateCcw />{exploded ? "Merge layers" : "Explode layers"}</Button>
           <Button size="icon" aria-label={running ? "Pause simulation" : "Play simulation"} title={running ? "Pause simulation" : "Play simulation"} onClick={() => setRunning((value) => !value)}>{running ? <Pause /> : <Play />}</Button>
