@@ -290,7 +290,7 @@
 .science-notes summary { font-size: 12px; font-weight: 600; cursor: pointer; margin-bottom: 12px; }
 .science-notes a { color: var(--primary); text-decoration: underline; }
 .science-notes ul { list-style: disc; padding-left: 20px; }
-.author-watermark { width: 100px; height: 58px; object-fit: cover; object-position: 50% 50%; flex-shrink: 0; mix-blend-mode: multiply; }
+
 .sim-footer { align-items: center; }
 @media (max-width: 640px) { .series-control { grid-column: 1 / -1; margin: 0; }.notes-grid { grid-template-columns: 1fr; gap: 18px; }.sim-footer { align-items: flex-start; }.scene-state { top: 42px; }.sim-header { flex-wrap: wrap; }.header-actions { flex-shrink: 0; } }
 
