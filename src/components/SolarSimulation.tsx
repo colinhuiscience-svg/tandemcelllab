@@ -157,15 +157,20 @@ function LoadObject({ load, active }: { load: LoadKind; active: boolean }) {
   const PALETTE = usePalette();
   const rotor = useRef<THREE.Group>(null);
   useFrame((_, delta) => {
-    if (rotor.current && load === "motor" && active) rotor.current.rotation.z -= Math.min(delta, 0.05) * 7;
+    if (rotor.current && load === "motor" && active) rotor.current.rotation.y -= Math.min(delta, 0.05) * 7;
   });
   return (
     <group position={[3.7, 0.15, 0]}>
       <mesh castShadow><cylinderGeometry args={[0.66, 0.66, 0.32, 32]} /><meshStandardMaterial color={PALETTE.contact} roughness={0.25} metalness={0.45} /></mesh>
       {load === "led" && <mesh position={[0, 0.58, 0]}><sphereGeometry args={[0.38, 24, 24]} /><meshStandardMaterial color={PALETTE.photon} emissive={PALETTE.photon} emissiveIntensity={active ? 2.4 : 0.08} transparent opacity={0.75} /></mesh>}
-      {load === "motor" && <group position={[0, 0.1, 0.2]}>
-        <mesh rotation-x={Math.PI / 2}><cylinderGeometry args={[0.07, 0.07, 0.5, 12]} /><meshStandardMaterial color={PALETTE.contact} metalness={0.6} roughness={0.3} /></mesh>
-        <group ref={rotor}>{[0, 1, 2].map((i) => <mesh key={i} rotation-z={(i * Math.PI * 2) / 3} position={[0, 0.3, 0]}><boxGeometry args={[0.16, 0.9, 0.06]} /><meshStandardMaterial color={PALETTE.silicon} /></mesh>)}</group>
+      {load === "motor" && <group>
+        <mesh position={[0, 0.25, 0]}><cylinderGeometry args={[0.07, 0.07, 0.2, 16]} /><meshStandardMaterial color={PALETTE.contact} metalness={0.6} roughness={0.3} /></mesh>
+        <group ref={rotor} position={[0, 0.36, 0]} name="centered-motor-spinner">
+          <mesh castShadow><cylinderGeometry args={[0.55, 0.55, 0.08, 48]} /><meshStandardMaterial color={PALETTE.silicon} metalness={0.25} roughness={0.35} /></mesh>
+          <mesh position={[0, 0.045, 0]}><boxGeometry args={[1, 0.012, 0.1]} /><meshStandardMaterial color={PALETTE.contact} metalness={0.6} roughness={0.3} /></mesh>
+          <mesh position={[0.3, 0.05, 0.17]}><sphereGeometry args={[0.06, 12, 12]} /><meshStandardMaterial color={PALETTE.photon} /></mesh>
+        </group>
+        <mesh position={[0, 0.42, 0]}><cylinderGeometry args={[0.1, 0.1, 0.05, 20]} /><meshStandardMaterial color={PALETTE.contact} metalness={0.7} roughness={0.25} /></mesh>
       </group>}
       {load === "resistor" && <mesh rotation-z={Math.PI / 2}><boxGeometry args={[0.28, 1.1, 0.28]} /><meshStandardMaterial color={PALETTE.perovskite} /></mesh>}
       {load === "battery" && <group><mesh><boxGeometry args={[0.62, 1.1, 0.42]} /><meshStandardMaterial color={PALETTE.silicon} /></mesh><mesh position={[0, 0.68, 0]}><boxGeometry args={[0.18, 0.25, 0.18]} /><meshStandardMaterial color={PALETTE.contact} /></mesh></group>}
