@@ -44,6 +44,11 @@ jobs:
       - name: Build website
         run: npm run build
 
+      - name: Check generated HTML
+        run: |
+          find .output/public -type f -name '*.html'
+          test -f .output/public/index.html
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
