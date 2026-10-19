@@ -15,5 +15,6 @@
 - Keep layer definitions and panel benchmark assumptions in one shared catalog; the scene and explorer derive from it to preserve order and single-junction versus tandem differences.
 - Preset efficiency is an assumed reference maximum-power benchmark; report the actual load-dependent conversion efficiency separately and never imply that a generic stack reproduces a manufacturer's proprietary design.
 - Keep qualitative photon destinations and selective carrier routes in the pure pathway module; the instanced scene visualizes these rules without claiming a spectral or device-physics solution.
+- Keep collection-grid dimensions and finger-to-busbar paths shared in the pathway module; render grid collection separately from absorber transport so internal tandem carriers are not sent directly to the front terminal.
 - Model identical series-connected cells by adding voltage and incident area while retaining per-cell current, and expose device activation through shared readings.
 - Preserve supplied layer numbering but use physical passivation-before-metal ordering in compact assembly; drawings exaggerate thin films and surface relief.

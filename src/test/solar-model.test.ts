@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { calculateSolarReading } from "@/lib/solar-model";
 import { PANEL_PRESETS, TANDEM_LAYERS, SILICON_LAYERS } from "@/lib/solar-layers";
 import { physicalLayerOrder, layerHeight } from "@/lib/solar-layers";
-import { photonDestination, carrierRoute } from "@/lib/solar-pathways";
+import { photonDestination, carrierRoute, CONTACT_GRID, collectionPoint } from "@/lib/solar-pathways";
 
 describe("solar panel presets", () => {
   it("contains all 17 tandem layers in order and a single-absorber silicon stack", () => {
@@ -57,5 +57,20 @@ describe("solar panel presets", () => {
     expect(merged.findIndex((layer) => layer.id === "rear-shj")).toBeLessThan(merged.findIndex((layer) => layer.id === "rear-contact"));
     expect(TANDEM_LAYERS[13]?.id).toBe("rear-contact");
     expect(layerHeight(0, 17, false) - layerHeight(1, 17, false)).toBeCloseTo(0.028);
+  });
+  it("generates silicon pairs with separate electron and hole extraction paths", () => {
+    for (const layers of [TANDEM_LAYERS, SILICON_LAYERS]) {
+      const absorber = photonDestination(layers, "infrared");
+      expect(absorber).toBe("silicon");
+      expect(carrierRoute(layers, absorber, false)[0]).toBe("silicon");
+      expect(carrierRoute(layers, absorber, true)).toEqual(["silicon", "rear-shj", "rear-contact"]);
+    }
+  });
+  it("collects electrons along fingers then busbars into the wire terminal", () => {
+    expect(collectionPoint(0, -1.2, 0)).toEqual([CONTACT_GRID.fingerXs[0], -1.2]);
+    expect(collectionPoint(0, -1.2, 0.4)).toEqual([CONTACT_GRID.fingerXs[0], -0.7]);
+    expect(collectionPoint(0, -1.2, 0.85)).toEqual([2.2, -0.7]);
+    expect(collectionPoint(0, -1.2, 1)[0]).toBe(2.2);
+    expect(collectionPoint(0, -1.2, 1)[1]).toBeCloseTo(0);
   });
 });

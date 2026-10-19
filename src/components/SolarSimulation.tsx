@@ -7,6 +7,7 @@ import * as THREE from "three";
 
 import watermark from "@/assets/chui-watermark.png.asset.json";
 import { LayerInteractions } from "./LayerInteractions";
+import { ContactGrid } from "./ContactGrid";
 import { LoadingScreen } from "./LoadingScreen";
 import { SimulationNotes } from "./SimulationNotes";
 import panelAsset from "@/assets/panel.stl.asset.json";
@@ -117,14 +118,14 @@ function Layer({ layer, y, focused, dimmed, exploded, onSelect }: { layer: Solar
   );
 }
 
-function CarrierFlow({ current, active, frontY, rearY, open }: { current: number; active: boolean; frontY: number; rearY: number; open: boolean }) {
+function CarrierFlow({ current, active, frontY, rearY, frontZ, rearZ, open }: { current: number; active: boolean; frontY: number; rearY: number; frontZ: number; rearZ: number; open: boolean }) {
   const PALETTE = usePalette();
   const group = useRef<THREE.Group>(null);
   const time = useRef(0);
   const curve = useMemo(() => new THREE.CatmullRomCurve3([
-    new THREE.Vector3(-0.7, frontY, 0), new THREE.Vector3(0.1, 3.8, 0), new THREE.Vector3(3.7, 3.8, 0),
-    new THREE.Vector3(3.7, 0.15, 0), new THREE.Vector3(3.7, -3.5, 0), new THREE.Vector3(-0.7, -3.5, 0), new THREE.Vector3(-0.7, rearY, 0),
-  ], false), [frontY, rearY]);
+    new THREE.Vector3(-0.7, frontY, frontZ), new THREE.Vector3(0.1, 3.8, 0), new THREE.Vector3(3.7, 3.8, 0),
+    new THREE.Vector3(3.7, 0.15, 0), new THREE.Vector3(3.7, -3.5, 0), new THREE.Vector3(-0.7, -3.5, 0), new THREE.Vector3(-0.7, rearY, rearZ),
+  ], false), [frontY, rearY, frontZ, rearZ]);
   useFrame((_, delta) => {
     if (!group.current) return;
     const speed = 0.08 + current * 2.5;
@@ -132,7 +133,7 @@ function CarrierFlow({ current, active, frontY, rearY, open }: { current: number
     group.current.children.forEach((child, index) => {
       const t = (time.current + index / 18) % 1;
       child.position.copy(curve.getPointAt(t));
-      child.visible = !open;
+      child.visible = !open && current > 0;
     });
   });
   return (
@@ -197,8 +198,11 @@ function FocusCamera({ selected, layers, exploded }: { selected: string | null; 
 function Scene({ exploded, irradiance, reading, load, running, layers, selected, onSelect, original }: { exploded: boolean; irradiance: number; reading: ReturnType<typeof calculateSolarReading>; load: LoadKind; running: boolean; layers: SolarLayer[]; selected: string | null; onSelect: (id: string | null) => void; original: boolean }) {
   const PALETTE = usePalette();
   const flowing = running && reading.current > 0.002;
-  const frontY = layerHeight(layers.findIndex((layer) => layer.id === "izo" || layer.id === "silicon-front"), layers.length, exploded);
+  const frontId = layers.some((layer) => layer.id === "izo") ? "izo" : "silicon-front";
+  const frontY = layerHeight(layers.findIndex((layer) => layer.id === frontId), layers.length, exploded) + 0.08;
   const rearY = layerHeight(layers.findIndex((layer) => layer.id === "rear-contact"), layers.length, exploded);
+  const frontZ = selected === frontId ? 1.1 : 0;
+  const rearZ = selected === "rear-contact" ? 1.1 : 0;
   return (
     <>
       <color attach="background" args={[PALETTE.canvas]} />
@@ -208,11 +212,8 @@ function Scene({ exploded, irradiance, reading, load, running, layers, selected,
       {original && <Suspense fallback={<mesh position={[-2.9, 0, 0]}><boxGeometry args={[4.4, 0.1, 2.55]} /><meshStandardMaterial color={PALETTE.contact} wireframe /></mesh>}><UploadedPanel exploded={exploded} /></Suspense>}
       {layers.map((layer, index) => <Layer key={layer.id} layer={layer} y={layerHeight(index, layers.length, exploded)} focused={selected === layer.id} dimmed={selected !== null && selected !== layer.id} exploded={exploded} onSelect={() => onSelect(selected === layer.id ? null : layer.id)} />)}
       <LayerInteractions layers={layers} exploded={exploded} selected={selected} running={running} irradiance={irradiance} current={reading.current} recombination={reading.recombination} colors={PALETTE} />
-      <CarrierFlow current={reading.current} active={flowing} frontY={frontY} rearY={rearY} open={load === "open"} />
-      {!exploded && <group position={[-2.9, layerHeight(0, layers.length, false) - 0.06, 0]} name="assembled-cell-fingers">
-        {Array.from({ length: 15 }, (_, i) => <mesh key={i} position={[-1.95 + i * 0.28, 0, 0]}><boxGeometry args={[0.018, 0.012, 2.5]} /><meshStandardMaterial color={PALETTE.contact} metalness={0.8} roughness={0.25} /></mesh>)}
-        {[-0.7, 0.7].map((z) => <mesh key={z} position={[0, 0.01, z]}><boxGeometry args={[4.2, 0.012, 0.04]} /><meshStandardMaterial color={PALETTE.contact} metalness={0.8} /></mesh>)}
-      </group>}
+      <CarrierFlow current={reading.current} active={flowing} frontY={frontY + 0.025} rearY={rearY} frontZ={frontZ} rearZ={rearZ} open={load === "open"} />
+      <ContactGrid y={frontY} z={frontZ} running={running} current={reading.current} colors={PALETTE} />
       <LoadObject load={load} active={running && reading.loadActive} />
       <FocusCamera selected={selected} layers={layers} exploded={exploded} />
     </>
