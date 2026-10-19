@@ -28,3 +28,8 @@
 - [x] Brushstroke animated loading screen with watermark on entry
 - [x] Watermark also shown in the page header
 - [x] Recombination proxy math re-verified (1 − I/Isc, consistent with display and formula)
+
+## Loading screen v2 & cost metric (done)
+- [x] Loading screen writes out the signature (left-to-right reveal with pen dot), ~4s total
+- [x] Watermark converted to transparent PNG — blends into header and footer backgrounds
+- [x] Cost-per-watt metric added (assumed $/W per panel preset)
