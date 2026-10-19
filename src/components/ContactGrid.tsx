@@ -21,10 +21,10 @@ export function ContactGrid({ y, z, running, current, colors }: { y: number; z: 
     particles.current.instanceMatrix.needsUpdate = true;
   });
   return <group position={[-2.9, y, z]} name="front-collection-grid" userData={{ schematic: true }}>
-    {CONTACT_GRID.fingerXs.map((x) => <mesh key={x} position={[x, 0, 0]} renderOrder={12}><boxGeometry args={[0.035, 0.018, 2.5]} /><meshStandardMaterial color={colors.contact} metalness={0.8} roughness={0.25} depthTest={false} /></mesh>)}
-    {CONTACT_GRID.busbarZs.map((busZ) => <mesh key={busZ} position={[0.04, 0.025, busZ]} renderOrder={12}><boxGeometry args={[4.32, 0.025, 0.09]} /><meshStandardMaterial color={colors.contact} metalness={0.8} roughness={0.25} depthTest={false} /></mesh>)}
-    <mesh position={[2.2, 0.025, 0]} renderOrder={12}><boxGeometry args={[0.09, 0.025, 1.49]} /><meshStandardMaterial color={colors.contact} metalness={0.8} roughness={0.25} depthTest={false} /></mesh>
-    <instancedMesh ref={particles} args={[undefined, undefined, 24]} frustumCulled={false} renderOrder={13}><sphereGeometry args={[0.07, 10, 8]} /><meshBasicMaterial color={colors.electron} depthTest={false} /></instancedMesh>
+    {CONTACT_GRID.fingerXs.map((x) => <mesh key={x} position={[x, 0, 0]} renderOrder={12}><boxGeometry args={[0.035, 0.018, 2.5]} /><meshStandardMaterial color={colors.contact} metalness={0.8} roughness={0.25} transparent depthWrite={false} depthTest={false} /></mesh>)}
+    {CONTACT_GRID.busbarZs.map((busZ) => <mesh key={busZ} position={[0.04, 0.025, busZ]} renderOrder={12}><boxGeometry args={[4.32, 0.025, 0.09]} /><meshStandardMaterial color={colors.contact} metalness={0.8} roughness={0.25} transparent depthWrite={false} depthTest={false} /></mesh>)}
+    <mesh position={[2.2, 0.025, 0]} renderOrder={12}><boxGeometry args={[0.09, 0.025, 1.49]} /><meshStandardMaterial color={colors.contact} metalness={0.8} roughness={0.25} transparent depthWrite={false} depthTest={false} /></mesh>
+    <instancedMesh ref={particles} args={[undefined, undefined, 24]} frustumCulled={false} renderOrder={13}><sphereGeometry args={[0.07, 10, 8]} /><meshBasicMaterial color={colors.electron} transparent depthWrite={false} depthTest={false} /></instancedMesh>
     <Html position={[-1.2, 0.14, -1.25]} center className="pointer-events-none"><span className="bg-background/90 px-1 text-[10px] text-foreground whitespace-nowrap">Metal fingers</span></Html>
     <Html position={[2.2, 0.16, 0.8]} center className="pointer-events-none"><span className="bg-background/90 px-1 text-[10px] text-foreground whitespace-nowrap">Busbars → wire</span></Html>
   </group>;
