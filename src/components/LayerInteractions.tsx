@@ -1,4 +1,5 @@
 import { useFrame } from "@react-three/fiber";
+import { Html } from "@react-three/drei";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { layerHeight, type SolarLayer } from "@/lib/solar-layers";
@@ -58,13 +59,14 @@ export function LayerInteractions({ layers, exploded, selected, running, irradia
       dummy.updateMatrix();
       halos.current?.setMatrixAt(i, dummy.matrix);
       const generated = packet.destination === "silicon" || packet.destination === "perovskite";
-      const t = Math.max(0, (phase - 0.55) / 0.45);
+      // Hold the newly generated pair apart in the absorber before showing extraction.
+      const t = Math.max(0, (phase - 0.7) / 0.3);
       // Some pairs meet in the absorber; extracted carriers follow selective contacts.
-      const lost = (i % 5) / 5 < recombination * 0.65;
+      const lost = ((i * 7 + 3) % 17) / 17 < recombination * 0.45;
       [electrons.current, holes.current].forEach((mesh, kind) => {
         if (!mesh) return;
         const route = kind === 0 ? packet.electron : packet.hole;
-        const point = lost ? new THREE.Vector3(x + (kind === 0 ? -1 : 1) * 0.25 * (1 - t), end, zOf(packet.destination, z)) : routePoint(route, t, x + (kind === 0 ? -0.16 : 0.16), z);
+        const point = lost ? new THREE.Vector3(x + (kind === 0 ? -1 : 1) * 0.3 * (1 - t), end + 0.12, zOf(packet.destination, z)) : routePoint(route, t, x + (kind === 0 ? -0.3 : 0.3), z);
         const size = lit && generated && phase >= 0.55 ? Math.max(0, lost ? 1 - t : t > 0.88 ? (1 - t) / 0.12 : 1) : 0;
         dummy.position.copy(point);
         dummy.rotation.set(0, 0, 0);
@@ -83,19 +85,21 @@ export function LayerInteractions({ layers, exploded, selected, running, irradia
       });
       dummy.position.set(x, end + 0.04, zOf(packet.destination, z));
       dummy.rotation.set(-Math.PI / 2, 0, 0);
-      const pulse = (phase - 0.5) / 0.1;
+      const pulse = (phase - 0.55) / 0.15;
       dummy.scale.setScalar(lit && generated && pulse > 0 && pulse < 1 ? pulse * 2.6 : 0);
       dummy.updateMatrix(); impacts.current?.setMatrixAt(i, dummy.matrix);
     });
     [photons.current, halos.current, electrons.current, electronArrows.current, holes.current, holeArrows.current, impacts.current].forEach((mesh) => { mesh.instanceMatrix.needsUpdate = true; });
   });
   return <group name="coupled-layer-interactions" userData={{ schematic: true, current }}>
-    <instancedMesh ref={halos} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={9}><sphereGeometry args={[0.15, 12, 10]} /><meshBasicMaterial color={colors.photon} transparent opacity={0.22} depthTest={false} /></instancedMesh>
-    <instancedMesh ref={photons} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={10}><sphereGeometry args={[0.15, 12, 10]} /><meshBasicMaterial color={colors.photon} depthTest={false} /></instancedMesh>
-    <instancedMesh ref={electrons} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={11}><sphereGeometry args={[0.13, 12, 10]} /><meshBasicMaterial color={colors.electron} depthTest={false} /></instancedMesh>
-    <instancedMesh ref={electronArrows} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={11}><coneGeometry args={[0.09, 0.2, 8]} /><meshBasicMaterial color={colors.electron} depthTest={false} /></instancedMesh>
-    <instancedMesh ref={holes} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={11}><torusGeometry args={[0.13, 0.045, 8, 12]} /><meshBasicMaterial color={colors.hole} depthTest={false} /></instancedMesh>
-    <instancedMesh ref={holeArrows} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={11}><coneGeometry args={[0.09, 0.2, 8]} /><meshBasicMaterial color={colors.hole} depthTest={false} /></instancedMesh>
-    <instancedMesh ref={impacts} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={9}><ringGeometry args={[0.14, 0.2, 16]} /><meshBasicMaterial color={colors.photon} side={THREE.DoubleSide} depthTest={false} /></instancedMesh>
+    <Html position={[-5.1, yOf("silicon") + 0.18, zOf("silicon", 0)]} center className="pointer-events-none"><span className="bg-background/90 px-1 text-[10px] text-foreground whitespace-nowrap">Silicon · e⁻ + h⁺ generation</span></Html>
+    {layers.some((layer) => layer.id === "perovskite") && <Html position={[-5.1, yOf("perovskite") + 0.18, zOf("perovskite", 0)]} center className="pointer-events-none"><span className="bg-background/90 px-1 text-[10px] text-foreground whitespace-nowrap">Perovskite · e⁻ + h⁺ generation</span></Html>}
+    <instancedMesh ref={halos} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={9}><sphereGeometry args={[0.15, 12, 10]} /><meshBasicMaterial color={colors.photon} transparent opacity={0.22} depthWrite={false} depthTest={false} /></instancedMesh>
+    <instancedMesh ref={photons} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={10}><sphereGeometry args={[0.15, 12, 10]} /><meshBasicMaterial color={colors.photon} transparent depthWrite={false} depthTest={false} /></instancedMesh>
+    <instancedMesh ref={electrons} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={11}><sphereGeometry args={[0.13, 12, 10]} /><meshBasicMaterial color={colors.electron} transparent depthWrite={false} depthTest={false} /></instancedMesh>
+    <instancedMesh ref={electronArrows} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={11}><coneGeometry args={[0.09, 0.2, 8]} /><meshBasicMaterial color={colors.electron} transparent depthWrite={false} depthTest={false} /></instancedMesh>
+    <instancedMesh ref={holes} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={11}><torusGeometry args={[0.13, 0.045, 8, 12]} /><meshBasicMaterial color={colors.hole} transparent depthWrite={false} depthTest={false} /></instancedMesh>
+    <instancedMesh ref={holeArrows} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={11}><coneGeometry args={[0.09, 0.2, 8]} /><meshBasicMaterial color={colors.hole} transparent depthWrite={false} depthTest={false} /></instancedMesh>
+    <instancedMesh ref={impacts} args={[undefined, undefined, COUNT]} frustumCulled={false} renderOrder={9}><ringGeometry args={[0.14, 0.2, 16]} /><meshBasicMaterial color={colors.photon} side={THREE.DoubleSide} transparent depthWrite={false} depthTest={false} /></instancedMesh>
   </group>;
 }

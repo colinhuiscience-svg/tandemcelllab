@@ -33,3 +33,8 @@
 - [x] Loading screen writes out the signature (left-to-right reveal with pen dot), ~4s total
 - [x] Watermark converted to transparent PNG — blends into header and footer backgrounds
 - [x] Cost-per-watt metric added (assumed $/W per panel preset)
+
+## Absorber generation and collection grid
+- [ ] Make silicon electron–hole generation clearly visible in both panel types.
+- [ ] Show fingers, busbars, and charge collection into the external wire.
+- [ ] Verify routes, generation, and live rendering.
