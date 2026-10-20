@@ -311,9 +311,7 @@
 @keyframes signature-reveal { from { -webkit-mask-position: 100% 0; mask-position: 100% 0; } to { -webkit-mask-position: 0% 0; mask-position: 0% 0; } }
 .signature-pen { position: absolute; top: 46%; left: 0; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--perovskite); box-shadow: 0 0 14px 4px var(--perovskite); animation: pen-travel var(--write-ms, 2600ms) cubic-bezier(0.4, 0, 0.3, 1) forwards; }
 @keyframes pen-travel { 0% { left: 0; opacity: 0; } 6% { opacity: 1; } 92% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
-.loading-label { font-size: 12px; letter-spacing: 0.35em; color: var(--muted-foreground); margin: 0; opacity: 0; animation: watermark-in 0.8s ease calc(var(--write-ms, 2600ms) * 0.55) forwards; }
-@keyframes watermark-in { to { opacity: 1; } }
 .header-title { display: flex; align-items: center; gap: 14px; }
 .header-watermark { width: 72px; height: auto; }
 .author-watermark { width: 110px; height: auto; object-fit: contain; flex-shrink: 0; }
-@media (prefers-reduced-motion: reduce) { .signature-write img { animation: none; -webkit-mask-image: none; mask-image: none; } .signature-pen { display: none; } .loading-label { animation: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .signature-write img { animation: none; -webkit-mask-image: none; mask-image: none; } .signature-pen { display: none; } }

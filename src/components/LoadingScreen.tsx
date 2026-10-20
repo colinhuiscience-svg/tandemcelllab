@@ -20,7 +20,6 @@ export function LoadingScreen() {
         <img src={watermark.url} alt="C. Hui" />
         <span className="signature-pen" aria-hidden="true" />
       </div>
-      <p className="loading-label">SOLAR CELL LAB</p>
     </div>
   );
 }
