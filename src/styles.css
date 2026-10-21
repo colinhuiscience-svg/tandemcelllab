@@ -167,13 +167,21 @@
 .eyebrow { font-size: 10px; font-weight: 700; color: var(--primary); margin: 0 0 8px; letter-spacing: 0; }
 .sim-header h1 { font-size: 28px; font-weight: 650; margin: 0; line-height: 1.3; letter-spacing: 0; }
 .header-actions { display: flex; gap: 10px; align-items: center; }
+.intro-card { margin: 0 0 28px; padding: 18px 20px; border: 1px solid color-mix(in oklch, var(--primary) 26%, var(--border)); background: color-mix(in oklch, var(--primary) 5%, var(--background)); }
+.intro-card-heading, .physics-explainer-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.intro-card .section-label, .physics-explainer .section-label { margin: 0 0 6px; }
+.intro-card h2, .physics-explainer h2 { margin: 0; font-size: 16px; line-height: 1.35; font-weight: 650; }
+.intro-card button { flex-shrink: 0; }
+.intro-card button svg { width: 14px; height: 14px; }
+.intro-card > p { max-width: 860px; margin: 12px 0 0; font-size: 12px; line-height: 1.75; color: var(--muted-foreground); }
 .sim-layout { display: grid; grid-template-columns: 215px minmax(0, 1fr) 290px; height: 640px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-.controls-panel { padding: 30px 24px 30px 0; border-right: 1px solid var(--border); }
+.controls-panel { min-width: 0; padding: 30px 24px 30px 0; border-right: 1px solid var(--border); }
 .control-block { margin-bottom: 35px; }
-.control-label { display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-bottom: 20px; gap: 8px; }
+.control-label { display: flex; min-width: 0; align-items: center; justify-content: space-between; font-size: 12px; margin-bottom: 20px; gap: 8px; }
 .control-label span { display: flex; align-items: center; gap: 8px; }
 .control-label svg { width: 16px; height: 16px; color: var(--muted-foreground); }
-.control-label strong { font-family: var(--font-numeric); font-weight: 500; }
+.control-label strong { min-width: 0; font-family: var(--font-numeric); font-weight: 500; text-align: right; overflow-wrap: anywhere; }
+.control-block > [data-orientation="horizontal"] { min-width: 0; width: 100%; }
 .range-labels { display: flex; justify-content: space-between; margin-top: 12px; color: var(--muted-foreground); font-size: 10px; }
 .section-label { font-size: 10px; font-weight: 650; color: var(--muted-foreground); margin-bottom: 14px; }
 .load-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
@@ -258,7 +266,11 @@
   .controls-panel { order: 1; }
   .layer-explorer { order: 2; width: 100%; }
   .preset-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }.preset-option { padding: 8px; font-size: 10px; min-height: 65px; }.preset-option small { font-size: 9px; }
-  .controls-panel { padding: 24px 0 4px; border-right: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .controls-panel { padding: 24px 0 4px; border-right: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+  .control-block, .series-control, .status-readout, .model-reference { min-width: 0; }
+  .control-label { align-items: flex-start; flex-wrap: wrap; }
+  .control-label span, .control-label strong { min-width: 0; }
+  .control-label strong { margin-left: auto; }
   .control-block { margin-bottom: 10px; }
   .control-block:nth-child(3), .status-readout, .model-reference { grid-column: 1 / -1; }
   .load-grid { grid-template-columns: repeat(5, 1fr); gap: 5px; }
@@ -273,6 +285,10 @@
   .metric strong { font-size: 24px; }
   .metric { padding: 0 12px; }
   .sim-footer { flex-direction: column; gap: 6px; }
+  .intro-card { padding: 16px; }
+  .intro-card-heading, .physics-explainer-heading { flex-direction: column; gap: 12px; }
+  .intro-card button { width: 100%; justify-content: center; }
+  .physics-condition { padding-top: 0; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
 .series-control { margin: 22px 0; font-size: 10px; color: var(--muted-foreground); line-height: 1.6; }
@@ -290,6 +306,10 @@
 .science-notes summary { font-size: 12px; font-weight: 600; cursor: pointer; margin-bottom: 12px; }
 .science-notes a { color: var(--primary); text-decoration: underline; }
 .science-notes ul { list-style: disc; padding-left: 20px; }
+.physics-explainer { margin: 26px 0 0; padding: 18px 20px; border-left: 3px solid var(--primary); background: color-mix(in oklch, var(--silicon) 7%, var(--background)); }
+.physics-explainer h2 { font-size: 18px; }
+.physics-condition { flex-shrink: 0; padding-top: 4px; font-family: var(--font-numeric); font-size: 10px; color: var(--muted-foreground); }
+.physics-explainer > p { max-width: 980px; margin: 12px 0 0; font-size: 12px; line-height: 1.75; color: var(--muted-foreground); }
 
 .sim-footer { align-items: center; }
 @media (max-width: 640px) { .series-control { grid-column: 1 / -1; margin: 0; }.notes-grid { grid-template-columns: 1fr; gap: 18px; }.sim-footer { align-items: flex-start; }.scene-state { top: 42px; }.sim-header { flex-wrap: wrap; }.header-actions { flex-shrink: 0; } }

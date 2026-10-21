@@ -12,6 +12,7 @@ import {
   Sun,
   Zap,
   Box,
+  Info,
   Layers,
   Minus,
   Plus,
@@ -84,6 +85,33 @@ const LOADS: Array<{ id: LoadKind; label: string; icon: typeof Lightbulb }> = [
   { id: "battery", label: "Battery", icon: BatteryCharging },
   { id: "open", label: "Open", icon: CircleGauge },
 ];
+
+function physicsSummary(
+  irradiance: number,
+  temperature: number,
+  load: LoadKind,
+  reading: ReturnType<typeof calculateSolarReading>,
+  panel: PanelKind,
+) {
+  const absorber =
+    panel === "silicon" ? "silicon" : "the perovskite top cell and silicon bottom cell";
+  if (irradiance <= 0) {
+    return `No sunlight reaches ${absorber}, so no electron–hole pairs are generated and the circuit produces no power.`;
+  }
+  if (load === "open") {
+    return `Light is generating carriers in ${absorber}. With the circuit open, charge separates and voltage builds, but current cannot leave the cell, so power stays at zero.`;
+  }
+  if (!reading.loadActive) {
+    return `${absorber.charAt(0).toUpperCase()}${absorber.slice(1)} is making voltage, but the selected load needs more voltage to operate. Try more light, fewer series cells, or a different load.`;
+  }
+  const temperatureEffect =
+    temperature > 25
+      ? "The warmer cell loses some voltage."
+      : temperature < 25
+        ? "The cooler cell retains a little more voltage."
+        : "At 25°C, the model uses its reference voltage.";
+  return `Photons create carriers in ${absorber}; selective contacts guide them into the external circuit. The load draws ${(reading.current * 1000).toFixed(0)} mA at ${reading.voltage.toFixed(2)} V, delivering ${(reading.power * 1000).toFixed(0)} mW. ${temperatureEffect}`;
+}
 
 function UploadedPanel({ exploded }: { exploded: boolean }) {
   const PALETTE = usePalette();
@@ -573,6 +601,7 @@ export function SolarSimulation() {
   const [selected, setSelected] = useState<string | null>(null);
   const [original, setOriginal] = useState(false);
   const [seriesCells, setSeriesCells] = useState(1);
+  const [showIntro, setShowIntro] = useState(true);
   const preset = PANEL_PRESETS[panel];
   const [palette] = useState(readPalette);
   useEffect(() => {
@@ -626,6 +655,33 @@ export function SolarSimulation() {
           </Button>
         </div>
       </header>
+
+      <section className="intro-card" aria-labelledby="intro-title">
+        <div className="intro-card-heading">
+          <div>
+            <p className="section-label">START HERE</p>
+            <h2 id="intro-title">TL;DR: sunlight becomes electricity</h2>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            aria-expanded={showIntro}
+            aria-controls="intro-copy"
+            onClick={() => setShowIntro((value) => !value)}
+          >
+            <Info />
+            {showIntro ? "Hide explanation" : "How it works"}
+          </Button>
+        </div>
+        {showIntro && (
+          <p id="intro-copy">
+            Sunlight creates mobile electrons and holes inside the absorber. Selective contacts send
+            them to opposite sides; when a load is connected, that charge movement through the wire
+            becomes useful current. Adjust the sliders and watch the numbers and particle paths
+            respond.
+          </p>
+        )}
+      </section>
 
       <section className="preset-band" aria-label="Solar panel options">
         <div className="preset-options">
@@ -861,6 +917,18 @@ export function SolarSimulation() {
             <i style={{ width: `${reading.recombination * 100}%` }} />
           </div>
         </div>
+      </section>
+      <section className="physics-explainer" aria-live="polite" aria-atomic="true">
+        <div className="physics-explainer-heading">
+          <div>
+            <p className="section-label">LIVE PHYSICS</p>
+            <h2>What the simulation is telling you</h2>
+          </div>
+          <span className="physics-condition">
+            {irradiance} W/m² · {temperature}°C · {load}
+          </span>
+        </div>
+        <p>{physicsSummary(irradiance, temperature, load, reading, panel)}</p>
       </section>
       <SimulationNotes reading={reading} panel={panel} />
       <footer className="sim-footer">
