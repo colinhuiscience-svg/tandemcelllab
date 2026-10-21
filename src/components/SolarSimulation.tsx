@@ -2,9 +2,12 @@ import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, OrbitControls } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import {
+  ArrowLeft,
+  ArrowRight,
   BatteryCharging,
   CircleGauge,
   Fan,
+  HelpCircle,
   Lightbulb,
   Pause,
   Play,
@@ -16,6 +19,7 @@ import {
   Layers,
   Minus,
   Plus,
+  X,
 } from "lucide-react";
 import { createContext, Suspense, useContext, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -111,6 +115,114 @@ function physicsSummary(
         ? "The cooler cell retains a little more voltage."
         : "At 25°C, the model uses its reference voltage.";
   return `Photons create carriers in ${absorber}; selective contacts guide them into the external circuit. The load draws ${(reading.current * 1000).toFixed(0)} mA at ${reading.voltage.toFixed(2)} V, delivering ${(reading.power * 1000).toFixed(0)} mW. ${temperatureEffect}`;
+}
+
+type GuideStep = {
+  target?: string;
+  kicker: string;
+  title: string;
+  body: string;
+};
+
+const GUIDE_STEPS: GuideStep[] = [
+  {
+    kicker: "QUICK START",
+    title: "Welcome to Tandem Cell Lab",
+    body: "This short tour shows you where to change the experiment, where the electricity is moving, and how to read the data. You can reopen it any time with the Help guide button.",
+  },
+  {
+    target: "[data-guide='controls']",
+    kicker: "1 / 5 · CONTROLS",
+    title: "Change the conditions",
+    body: "Use irradiance to add or remove sunlight and temperature to see how heat shifts voltage. Choose a load to connect the cell to an LED, motor, resistor, battery, or an open circuit.",
+  },
+  {
+    target: "[data-guide='scene']",
+    kicker: "2 / 5 · LIVE MODEL",
+    title: "Watch charge move",
+    body: "Photons enter the absorber, create electron–hole pairs, and the animated carriers travel toward selective contacts. Use Merge layers or Explode layers to switch between the assembled cell and its schematic cross-section.",
+  },
+  {
+    target: "[data-guide='layer-explorer']",
+    kicker: "3 / 5 · MATERIALS",
+    title: "Inspect the stack",
+    body: "Select a layer in the explorer to see its role in the device. The stack is intentionally schematic and exaggerated so the transport and collection path is easier to follow.",
+  },
+  {
+    target: "[data-guide='metrics']",
+    kicker: "4 / 5 · DATA",
+    title: "Read the electrical output",
+    body: "Voltage is the electrical push, current is the charge flow, and power is their product. Load conversion compares delivered power with incident light. Cost per watt is an assumed reference, not a live measurement.",
+  },
+  {
+    target: "[data-guide='physics']",
+    kicker: "5 / 5 · INTERPRETATION",
+    title: "Let the explanation tell the story",
+    body: "This live physics box translates the current settings and numbers into plain language. Move a slider or change the load and it updates with what the model predicts, including the illustrative recombination proxy.",
+  },
+];
+
+function GuideOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [stepIndex, setStepIndex] = useState(0);
+  const step = GUIDE_STEPS[stepIndex] ?? GUIDE_STEPS[0]!;
+
+  useEffect(() => {
+    if (open) setStepIndex(0);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const target = step.target ? document.querySelector(step.target) : null;
+    document
+      .querySelectorAll("[data-guide-active]")
+      .forEach((element) => element.removeAttribute("data-guide-active"));
+    if (target instanceof HTMLElement) {
+      target.setAttribute("data-guide-active", "true");
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    return () => {
+      if (target instanceof HTMLElement) target.removeAttribute("data-guide-active");
+    };
+  }, [open, step]);
+
+  if (!open) return null;
+  const isLast = stepIndex === GUIDE_STEPS.length - 1;
+  return (
+    <div className="guide-overlay" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+      <div className="guide-backdrop" aria-hidden="true" />
+      <div className="guide-card">
+        <div className="guide-card-topline">
+          <span>{step.kicker}</span>
+          <Button variant="ghost" size="icon" aria-label="Close help guide" onClick={onClose}>
+            <X />
+          </Button>
+        </div>
+        <h2 id="guide-title">{step.title}</h2>
+        <p>{step.body}</p>
+        <div className="guide-card-footer">
+          <span
+            className="guide-progress"
+            aria-label={`Step ${stepIndex + 1} of ${GUIDE_STEPS.length}`}
+          >
+            {stepIndex + 1} / {GUIDE_STEPS.length}
+          </span>
+          <div className="guide-actions">
+            {stepIndex > 0 && (
+              <Button variant="ghost" size="sm" onClick={() => setStepIndex((value) => value - 1)}>
+                <ArrowLeft /> Back
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={() => (isLast ? onClose() : setStepIndex((value) => value + 1))}
+            >
+              {isLast ? "Finish guide" : "Next"} {!isLast && <ArrowRight />}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function UploadedPanel({ exploded }: { exploded: boolean }) {
@@ -602,10 +714,15 @@ export function SolarSimulation() {
   const [original, setOriginal] = useState(false);
   const [seriesCells, setSeriesCells] = useState(1);
   const [showIntro, setShowIntro] = useState(true);
+  const [guideOpen, setGuideOpen] = useState(false);
   const preset = PANEL_PRESETS[panel];
   const [palette] = useState(readPalette);
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) setRunning(false);
+    const guideTimer = window.setTimeout(() => {
+      if (!window.localStorage.getItem("tandem-cell-lab-guide-seen")) setGuideOpen(true);
+    }, 3700);
+    return () => window.clearTimeout(guideTimer);
   }, []);
   const reading = useMemo(
     () => calculateSolarReading(irradiance, temperature, load, panel, seriesCells),
@@ -616,10 +733,15 @@ export function SolarSimulation() {
     [preset.layers, exploded],
   );
   const focusLayer = preset.layers.find((layer) => layer.id === selected);
+  const closeGuide = () => {
+    setGuideOpen(false);
+    window.localStorage.setItem("tandem-cell-lab-guide-seen", "true");
+  };
 
   return (
     <main className="sim-shell">
       <LoadingScreen />
+      <GuideOverlay open={guideOpen} onClose={closeGuide} />
       <header className="sim-header">
         <div className="header-title">
           <img
@@ -633,6 +755,9 @@ export function SolarSimulation() {
           </div>
         </div>
         <div className="header-actions">
+          <Button variant="outline" size="sm" onClick={() => setGuideOpen(true)}>
+            <HelpCircle /> Help guide
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -720,7 +845,7 @@ export function SolarSimulation() {
       </section>
 
       <section className="sim-layout">
-        <aside className="controls-panel">
+        <aside className="controls-panel" data-guide="controls">
           <div className="control-block">
             <div className="control-label">
               <span>
@@ -820,7 +945,7 @@ export function SolarSimulation() {
           </div>
         </aside>
 
-        <div className="viewport-wrap">
+        <div className="viewport-wrap" data-guide="scene">
           <Canvas
             key={`${panel}|${exploded}|${load}|${selected ?? "none"}|${original}`}
             shadows
@@ -877,7 +1002,11 @@ export function SolarSimulation() {
         <LayerExplorer layers={preset.layers} selected={selected} onSelect={setSelected} />
       </section>
 
-      <section className="measurement-strip">
+      <section
+        className="measurement-strip"
+        data-guide="metrics"
+        aria-label="Electrical output metrics"
+      >
         <div className="metric">
           <span>VOLTAGE</span>
           <strong>
@@ -918,7 +1047,12 @@ export function SolarSimulation() {
           </div>
         </div>
       </section>
-      <section className="physics-explainer" aria-live="polite" aria-atomic="true">
+      <section
+        className="physics-explainer"
+        data-guide="physics"
+        aria-live="polite"
+        aria-atomic="true"
+      >
         <div className="physics-explainer-heading">
           <div>
             <p className="section-label">LIVE PHYSICS</p>

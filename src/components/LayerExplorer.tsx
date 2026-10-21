@@ -7,7 +7,7 @@ export function LayerExplorer({ layers, selected, onSelect }: { layers: SolarLay
   const index = layers.findIndex((layer) => layer.id === selected);
   const layer = layers[index];
   return (
-    <aside className="layer-explorer" aria-label="Layer explorer">
+    <aside className="layer-explorer" data-guide="layer-explorer" aria-label="Layer explorer">
       <div className="explorer-heading"><div><p className="section-label">LAYER EXPLORER</p><h2>{layers.length} layers <span>front → rear</span></h2></div>{layer && <Button variant="ghost" size="icon" aria-label="Show all layers" title="Show all layers" onClick={() => onSelect(null)}><X /></Button>}</div>
       {layer && <section className="focus-details" aria-label="Focused layer details">
         <p className="focus-number">LAYER {String(layer.number).padStart(2, "0")} / {layers.length}</p>

@@ -9,4 +9,6 @@
 - [ ] Keep mobile slider controls inside their grid columns at minimum and maximum values without clipping, overflow, or alignment shifts.
 - [ ] Add a live physics explanation that updates as irradiance, temperature, load, panel type, and series-cell settings change, and connects the readouts to carrier generation, voltage, current, power, and load behavior.
 - [ ] Add a prominent introductory TL;DR control that explains, in plain language, how sunlight creates charge carriers and how their movement through a load becomes electricity before users begin interacting.
+- [x] Arrange all six data metrics, including the recombination proxy, in a stable responsive grid that does not create an out-of-place implicit column on MacBook widths.
+- [x] Show a first-entry guided help tour that explains the controls, live 3D scene, layer explorer, metrics, and physics/data explanations, with a persistent way to reopen it.
 - [ ] Checkpoint the managed project and publish the permanent site.
