@@ -1,14 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import watermark from "@/assets/chui-watermark.png.asset.json";
 
 const WRITE_MS = 2600;
 const HOLD_MS = 900;
 
-export function LoadingScreen() {
+export function LoadingScreen({ onComplete }: { onComplete?: () => void }) {
   const [phase, setPhase] = useState<"write" | "done">("write");
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
   useEffect(() => {
-    const done = window.setTimeout(() => setPhase("done"), WRITE_MS + HOLD_MS);
+    const done = window.setTimeout(() => {
+      setPhase("done");
+      onCompleteRef.current?.();
+    }, WRITE_MS + HOLD_MS);
     return () => window.clearTimeout(done);
   }, []);
   if (phase === "done") return null;

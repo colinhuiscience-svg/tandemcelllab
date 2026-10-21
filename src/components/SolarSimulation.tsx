@@ -704,6 +704,7 @@ function Scene({
 }
 
 export function SolarSimulation() {
+  const [loadingActive, setLoadingActive] = useState(true);
   const [irradiance, setIrradiance] = useState(820);
   const [temperature, setTemperature] = useState(32);
   const [load, setLoad] = useState<LoadKind>("led");
@@ -739,8 +740,8 @@ export function SolarSimulation() {
   };
 
   return (
-    <main className="sim-shell">
-      <LoadingScreen />
+    <main className={`sim-shell${loadingActive ? " loading-active" : ""}`}>
+      <LoadingScreen onComplete={() => setLoadingActive(false)} />
       <GuideOverlay open={guideOpen} onClose={closeGuide} />
       <header className="sim-header">
         <div className="header-title">
